@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sendwaves – Send Money Home</title>
+    <title>Sendwave – Send Money Home</title>
     <style>
         * {
             box-sizing: border-box;
@@ -324,6 +324,34 @@
             text-align: center;
             min-height: 18px;
         }
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #323232;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity .3s ease, transform .3s ease;
+            pointer-events: none;
+            max-width: 90%;
+            text-align: center;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        .toast.error {
+            background: #c62828;
+        }
+        .toast.success {
+            background: #2e7d32;
+        }
     </style>
 </head>
 <body>
@@ -332,7 +360,7 @@
 
         <!-- ========== SPLASH ========== -->
         <div class="pg cur" id="p-splash" style="background:#FFE500;justify-content:center;align-items:center">
-            <span class="logo" style="font-size:36px;color:#000">SENDWAVES</span>
+            <span class="logo" style="font-size:36px;color:#000">SENDWAVE</span>
         </div>
 
         <!-- ========== LANDING ========== -->
@@ -379,7 +407,7 @@
                     <rect width="430" height="520" fill="url(#gr)" />
                 </svg>
                 <div class="hbar">
-                    <span class="logo" style="font-size:22px;color:#FFE500">SENDWAVES</span>
+                    <span class="logo" style="font-size:22px;color:#FFE500">SENDWAVE</span>
                     <button onclick="go('p-login')" style="background:none;border:none;color:#FFE500;font-size:16px;font-weight:700;cursor:pointer;text-decoration:underline">Log in</button>
                 </div>
                 <div class="hhl"><h1>RECEIVE<br />MONEY<br />QUICKLY &<br />SECURELY</h1></div>
@@ -401,7 +429,7 @@
 
         <!-- ========== SIGNUP ========== -->
         <div class="pg" id="p-signup">
-            <div class="top"><button onclick="go('p-land')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#000;padding:0 8px 0 0">←</button><span class="logo" style="font-size:17px;color:#000">SENDWAVES</span><div></div></div>
+            <div class="top"><button onclick="go('p-land')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#000;padding:0 8px 0 0">←</button><span class="logo" style="font-size:17px;color:#000">SENDWAVE</span><div></div></div>
             <div class="scr" style="padding:22px 18px">
                 <h2 style="font-size:24px;font-weight:700;color:#000;margin-bottom:6px">Create your account</h2>
                 <p style="font-size:14px;color:#666;margin-bottom:20px">Enter your details to get started.</p>
@@ -422,7 +450,7 @@
 
         <!-- ========== LOGIN ========== -->
         <div class="pg" id="p-login">
-            <div class="top"><button onclick="go('p-land')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#000;padding:0 8px 0 0">←</button><span class="logo" style="font-size:17px;color:#000">SENDWAVES</span><div></div></div>
+            <div class="top"><button onclick="go('p-land')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#000;padding:0 8px 0 0">←</button><span class="logo" style="font-size:17px;color:#000">SENDWAVE</span><div></div></div>
             <div class="scr" style="padding:22px 18px">
                 <h2 style="font-size:24px;font-weight:700;color:#000;margin-bottom:6px">Welcome back</h2>
                 <p style="font-size:14px;color:#888;margin-bottom:26px">Log in to your account</p>
@@ -510,7 +538,7 @@
             <div style="background:#FFE500;padding:max(44px,env(safe-area-inset-top)) 18px 22px;flex-shrink:0">
                 <div style="display:flex;align-items:center;gap:14px">
                     <div id="pav" style="width:56px;height:56px;border-radius:28px;background:#000;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:#FFE500">SK</div>
-                    <div><div id="pnm" style="font-size:18px;font-weight:800;color:#000">User</div><div id="pph" style="font-size:12px;color:rgba(0,0,0,.55);margin-top:2px">sendwaves.xyz</div><div style="display:inline-block;margin-top:5px;padding:2px 10px;border-radius:50px;background:#000;color:#FFE500;font-size:11px;font-weight:700">✓ Verified</div></div>
+                    <div><div id="pnm" style="font-size:18px;font-weight:800;color:#000">User</div><div id="pph" style="font-size:12px;color:rgba(0,0,0,.55);margin-top:2px">sendwave.xyz</div><div style="display:inline-block;margin-top:5px;padding:2px 10px;border-radius:50px;background:#000;color:#FFE500;font-size:11px;font-weight:700">✓ Verified</div></div>
                 </div>
             </div>
             <div class="scr" style="padding:12px 14px">
@@ -520,7 +548,7 @@
                 <div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:14px"><span>🎁</span><div style="flex:1;font-size:14px;font-weight:600;color:#000">Refer a friend</div><span style="padding:2px 10px;border-radius:50px;background:#FFE500;color:#000;font-size:11px;font-weight:700;margin-right:6px">Earn $10</span><span style="color:#ccc">›</span></div>
                 <div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:14px"><span>🌍</span><div style="flex:1;font-size:14px;font-weight:600;color:#000">Exchange rates</div><span style="color:#ccc">›</span></div>
                 <button onclick="logout()" style="width:100%;padding:14px;background:transparent;border:1.5px solid #ffcdd2;border-radius:50px;font-size:15px;font-weight:700;color:#c62828;cursor:pointer;margin-top:6px">Log out</button>
-                <p style="text-align:center;font-size:11px;color:#bbb;margin-top:14px">sendwaves.xyz · v2.0.0</p>
+                <p style="text-align:center;font-size:11px;color:#bbb;margin-top:14px">sendwave.xyz · v2.0.0</p>
             </div>
             <div class="bnav" style="background:#fff">
                 <div class="bni" onclick="openD()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
@@ -535,7 +563,7 @@
             <div style="background:#FFE500;padding:max(44px,env(safe-area-inset-top)) 18px 20px">
                 <div id="dav" style="width:50px;height:50px;border-radius:25px;background:#000;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;color:#FFE500;margin-bottom:10px">SK</div>
                 <div id="dnm" style="font-size:16px;font-weight:800;color:#000">User</div>
-                <div style="font-size:12px;color:rgba(0,0,0,.6);margin-top:2px">sendwaves.xyz</div>
+                <div style="font-size:12px;color:rgba(0,0,0,.6);margin-top:2px">sendwave.xyz</div>
             </div>
             <div class="dri" onclick="closeD();go('p-home')">🏠 Home</div>
             <div class="dri" onclick="closeD();go('p-act');loadTx()">📋 Activity</div>
@@ -634,15 +662,18 @@
                     <h3 style="font-size:18px;font-weight:700;color:#000">Help & FAQ</h3>
                     <button onclick="cSh('sh-help')" style="background:none;border:none;font-size:26px;cursor:pointer;color:#aaa;line-height:1">×</button>
                 </div>
-                <div style="background:#e8f5e9;border:1px solid #c8e6c9;border-radius:12px;padding:12px 14px;display:flex;gap:8px;margin-bottom:14px"><span>✅</span><span style="font-size:13px;color:#2e7d32">sendwaves.xyz is SSL secured & database powered.</span></div>
+                <div style="background:#e8f5e9;border:1px solid #c8e6c9;border-radius:12px;padding:12px 14px;display:flex;gap:8px;margin-bottom:14px"><span>✅</span><span style="font-size:13px;color:#2e7d32">sendwave.xyz is SSL secured & database powered.</span></div>
                 <div style="font-size:14px;color:#444;line-height:1.8">
                     <p style="margin-bottom:12px"><strong style="color:#000">Transfer speed?</strong><br />Transfers complete instantly.</p>
                     <p style="margin-bottom:12px"><strong style="color:#000">Exchange rate?</strong><br />1 USD = 129.5 KES, updated daily.</p>
                     <p style="margin-bottom:12px"><strong style="color:#000">Fees?</strong><br />Zero — what you send is what they get.</p>
-                    <p><strong style="color:#000">Support:</strong> support@sendwaves.xyz</p>
+                    <p><strong style="color:#000">Support:</strong> support@sendwave.xyz</p>
                 </div>
             </div>
         </div>
+
+        <!-- Toast -->
+        <div class="toast" id="toast"></div>
 
     </div>
 
@@ -650,9 +681,6 @@
         // ================================================================
         //  CONFIG
         // ================================================================
-        // Set API_BASE to your server URL. If you're using the provided
-        // server.js, leave it as '/api' (same origin).
-        // For local testing with the server running on port 3000:
         const API_BASE = '/api';
 
         // ================================================================
@@ -711,7 +739,12 @@
         }
 
         function toast(msg, type) {
-            // Toasts disabled.
+            var el = document.getElementById('toast');
+            if (!el) return;
+            el.textContent = msg;
+            el.className = 'toast show' + (type ? ' ' + type : '');
+            clearTimeout(el._t);
+            el._t = setTimeout(function() { el.classList.remove('show'); }, 3500);
         }
 
         // ================================================================
@@ -776,6 +809,8 @@
             allTx = [];
             localStorage.removeItem('sw_token');
             localStorage.removeItem('sw_name');
+            localStorage.removeItem('sw_balance');
+            localStorage.removeItem('sw_tx_cache');
             go('p-land');
             toast('Logged out', '');
         }
@@ -849,9 +884,9 @@
                 allTx = data || [];
                 renderHome();
                 renderAct();
+                localStorage.setItem('sw_tx_cache', JSON.stringify(allTx));
             } catch (e) {
                 console.error('loadTx:', e.message);
-                // If the server is not available, fall back to localStorage
                 var cached = localStorage.getItem('sw_tx_cache');
                 if (cached) {
                     try {
@@ -867,11 +902,11 @@
             try {
                 var data = await api('GET', '/me');
                 updBal(data.balance);
+                localStorage.setItem('sw_balance', String(data.balance));
                 await loadTx();
                 return true;
             } catch (e) {
                 console.error('loadMe:', e.message);
-                // Try to restore from cache
                 var cached = localStorage.getItem('sw_balance');
                 if (cached) updBal(parseFloat(cached));
                 var cachedTx = localStorage.getItem('sw_tx_cache');
@@ -882,6 +917,8 @@
                         renderAct();
                     } catch (_) {}
                 }
+                // If we have cached data, we're still "logged in" from the user's perspective
+                if (cached || cachedTx) return true;
                 return false;
             }
         }
@@ -908,12 +945,12 @@
                 var data = await api('POST', '/signup', { first_name: fn, last_name: ln, phone: fullPhone, password: pw });
                 setUser(data.name, data.token);
                 updBal(data.balance);
+                localStorage.setItem('sw_balance', String(data.balance));
                 allTx = [];
                 renderHome();
-                localStorage.setItem('sw_balance', String(data.balance));
                 localStorage.removeItem('sw_tx_cache');
                 go('p-home');
-                toast('Account created! Welcome to Sendwaves.', 'success');
+                toast('Account created! Welcome to Sendwave.', 'success');
             } catch (e) {
                 err.textContent = e.message;
                 toast(e.message, 'error');
@@ -1052,7 +1089,6 @@
                 if (hb) hb.textContent = '$' + bal.toFixed(2);
                 localStorage.setItem('sw_balance', String(bal));
 
-                // Insert transaction locally
                 allTx.unshift({
                     type: 'sent',
                     recipient_name: nm,
@@ -1094,20 +1130,54 @@
         }
 
         // ================================================================
-        //  BOOT
+        //  BOOT – Persistent Session with Instant Cache Restoration
         // ================================================================
-        setTimeout(function() {
+        (function boot() {
+            // 1) If we have a token and name, restore the session immediately from cache
             if (token && userName) {
                 setUser(userName, token);
+
+                // Restore balance from localStorage (if available)
+                var cachedBalance = localStorage.getItem('sw_balance');
+                if (cachedBalance) {
+                    updBal(parseFloat(cachedBalance));
+                }
+
+                // Restore transactions from localStorage (if available)
+                var cachedTx = localStorage.getItem('sw_tx_cache');
+                if (cachedTx) {
+                    try {
+                        allTx = JSON.parse(cachedTx);
+                        renderHome();
+                        renderAct();
+                    } catch (_) { /* ignore */ }
+                }
+
+                // Navigate to home immediately (no waiting for API)
+                go('p-home');
+
+                // Then refresh from API in the background
                 loadMe().then(function(ok) {
-                    if (ok) go('p-home');
-                    else { logout();
-                        go('p-land'); }
+                    if (!ok) {
+                        // If API fails but we have cached data, we stay logged in
+                        var hasCachedBalance = localStorage.getItem('sw_balance') !== null;
+                        var hasCachedTx = localStorage.getItem('sw_tx_cache') !== null;
+                        if (!hasCachedBalance && !hasCachedTx) {
+                            // No cached data at all – log out
+                            logout();
+                            go('p-land');
+                            toast('Session expired. Please log in again.', 'error');
+                        }
+                    }
+                }).catch(function() {
+                    // Silently keep using cached data
                 });
+
             } else {
+                // No token – show landing page
                 go('p-land');
             }
-        }, 1400);
+        })();
     </script>
 
 </body>
