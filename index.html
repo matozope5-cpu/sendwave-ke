@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sendwaves – Send Money Home</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+        }
+        html,
+        body {
+            height: 100%;
+            background: #000;
+        }
+        #app {
+            max-width: 430px;
+            margin: 0 auto;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+            background: #fff;
+        }
+        .pg {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            transform: translateX(100%);
+            transition: transform .28s ease;
+        }
+        .pg.cur {
+            transform: translateX(0);
+        }
+        .pg.out {
+            transform: translateX(-30%);
+        }
+        .scr {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .by {
+            width: 100%;
+            padding: 15px;
+            background: #FFE500;
+            color: #000;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .by:active {
+            opacity: .8;
+        }
+        .by:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+        .bo {
+            width: 100%;
+            padding: 14px;
+            background: #fff;
+            color: #000;
+            border: 1.5px solid #ddd;
+            border-radius: 50px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        input,
+        select {
+            width: 100%;
+            padding: 13px 15px;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 13px;
+            font-size: 15px;
+            outline: none;
+            -webkit-appearance: none;
+            background: #fff;
+            color: #000;
+            transition: border-color .2s;
+        }
+        input:focus,
+        select:focus {
+            border-color: #FFE500;
+        }
+        .fld {
+            margin-bottom: 14px;
+        }
+        .lb {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: .7px;
+            margin-bottom: 6px;
+        }
+        .top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: max(44px, env(safe-area-inset-top)) 18px 14px;
+            flex-shrink: 0;
+            border-bottom: 1px solid #f0f0f0;
+            background: #fff;
+        }
+        .logo {
+            font-family: Impact, 'Arial Black', sans-serif;
+            font-weight: 900;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .bnav {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            border-top: 1px solid #f0f0f0;
+            padding: 10px 0 max(18px, env(safe-area-inset-bottom));
+            flex-shrink: 0;
+            background: #fff;
+        }
+        .bni {
+            width: 50px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .ov {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0);
+            z-index: 500;
+            display: flex;
+            align-items: flex-end;
+            pointer-events: none;
+            transition: background .3s;
+        }
+        .ov.on {
+            background: rgba(0, 0, 0, .55);
+            pointer-events: all;
+        }
+        .sh {
+            background: #fff;
+            width: 100%;
+            border-radius: 22px 22px 0 0;
+            padding: 18px 20px max(30px, env(safe-area-inset-bottom));
+            transform: translateY(100%);
+            transition: transform .3s ease;
+            max-height: 94vh;
+            overflow-y: auto;
+        }
+        .ov.on .sh {
+            transform: translateY(0);
+        }
+        .hdl {
+            width: 36px;
+            height: 4px;
+            background: #e8e8e8;
+            border-radius: 2px;
+            margin: 0 auto 18px;
+        }
+        .spin {
+            width: 52px;
+            height: 52px;
+            border: 4px solid #eee;
+            border-top: 4px solid #000;
+            border-radius: 50%;
+            animation: sp .75s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes sp {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        .tick {
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            background: #FFE500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            animation: ck .45s cubic-bezier(.175, .885, .32, 1.275) both;
+        }
+        @keyframes ck {
+            from {
+                transform: scale(0);
+            }
+            to {
+                transform: scale(1);
+            }
+        }
+        .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 4px;
+            background: #e0e0e0;
+            display: inline-block;
+            transition: all .2s;
+        }
+        .dot.on {
+            background: #000;
+            width: 20px;
+        }
+        .txr {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 13px 0;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        .txr:last-child {
+            border-bottom: none;
+        }
+        .txav {
+            width: 44px;
+            height: 44px;
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+        .drw {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 76%;
+            max-width: 280px;
+            background: #fff;
+            z-index: 600;
+            transform: translateX(-100%);
+            transition: transform .3s ease;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, .15);
+        }
+        .drw.on {
+            transform: translateX(0);
+        }
+        .dov {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0);
+            z-index: 599;
+            pointer-events: none;
+            transition: background .3s;
+        }
+        .dov.on {
+            background: rgba(0, 0, 0, .4);
+            pointer-events: all;
+        }
+        .dri {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #1a1a1a;
+        }
+        .hero {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #b07850;
+            min-height: 0;
+        }
+        .hero svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .hbar {
+            position: absolute;
+            top: max(44px, env(safe-area-inset-top));
+            left: 0;
+            right: 0;
+            padding: 0 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 2;
+        }
+        .hhl {
+            position: absolute;
+            bottom: 14px;
+            left: 16px;
+            right: 16px;
+            z-index: 2;
+        }
+        .hhl h1 {
+            font-family: Impact, 'Arial Black', sans-serif;
+            font-weight: 900;
+            color: #3D0C11;
+            font-size: clamp(38px, 11vw, 56px);
+            line-height: .93;
+            text-transform: uppercase;
+        }
+        .err {
+            color: #c62828;
+            font-size: 13px;
+            margin-top: 8px;
+            text-align: center;
+            min-height: 18px;
+        }
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #323232;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity .3s ease, transform .3s ease;
+            pointer-events: none;
+            max-width: 90%;
+            text-align: center;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        .toast.error {
+            background: #c62828;
+        }
+        .toast.success {
+            background: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+
+        <!-- ========== SPLASH ========== -->
+        <div class="pg cur" id="p-splash" style="background:#FFE500;justify-content:center;align-items:center">
+            <span class="logo" style="font-size:36px;color:#000">SENDWAVES</span>
+        </div>
+
+        <!-- ========== LANDING ========== -->
+        <div class="pg" id="p-land">
+            <div class="hero">
+                <svg viewBox="0 0 430 520" preserveAspectRatio="xMidYMid slice">
+                    <rect width="430" height="520" fill="#c4906a" />
+                    <ellipse cx="55" cy="258" rx="42" ry="48" fill="#7a4a22" /><ellipse cx="55" cy="226" rx="42" ry="30" fill="#2a1a0a" />
+                    <ellipse cx="41" cy="258" rx="6" ry="5" fill="#1a0a04" /><ellipse cx="69" cy="258" rx="6" ry="5" fill="#1a0a04" />
+                    <circle cx="43" cy="256" r="2" fill="white" opacity=".5" /><circle cx="71" cy="256" r="2" fill="white" opacity=".5" />
+                    <path d="M38 276 Q55 293 72 276" stroke="#5a2a10" stroke-width="2.5" fill="none" stroke-linecap="round" />
+                    <ellipse cx="55" cy="428" rx="60" ry="110" fill="#d8c0a8" />
+                    <ellipse cx="165" cy="256" rx="44" ry="50" fill="#8a5030" /><ellipse cx="165" cy="222" rx="46" ry="34" fill="#1a0a04" />
+                    <ellipse cx="130" cy="240" rx="18" ry="28" fill="#1a0a04" /><ellipse cx="200" cy="240" rx="18" ry="28" fill="#1a0a04" />
+                    <path d="M150 258 Q158 252 166 258" stroke="#3a1a08" stroke-width="2.5" fill="none" />
+                    <path d="M168 258 Q176 252 184 258" stroke="#3a1a08" stroke-width="2.5" fill="none" />
+                    <ellipse cx="142" cy="273" rx="12" ry="8" fill="#c06060" opacity=".3" /><ellipse cx="188" cy="273" rx="12" ry="8" fill="#c06060" opacity=".3" />
+                    <path d="M147 286 Q165 308 183 286" fill="#3a0808" /><rect x="153" y="287" width="24" height="13" rx="3" fill="white" />
+                    <ellipse cx="165" cy="428" rx="58" ry="100" fill="#e8806a" />
+                    <ellipse cx="315" cy="266" rx="43" ry="49" fill="#7a4820" /><ellipse cx="315" cy="234" rx="43" ry="30" fill="#100800" />
+                    <ellipse cx="301" cy="266" rx="6" ry="5" fill="#1a0a04" /><ellipse cx="329" cy="266" rx="6" ry="5" fill="#1a0a04" />
+                    <path d="M298 284 Q315 302 332 284" stroke="#5a2a10" stroke-width="2.5" fill="none" stroke-linecap="round" />
+                    <circle cx="358" cy="280" r="5" fill="#c8a830" />
+                    <ellipse cx="315" cy="428" rx="65" ry="110" fill="#c8a888" />
+                    <ellipse cx="220" cy="314" rx="34" ry="38" fill="#90582a" /><ellipse cx="220" cy="291" rx="34" ry="22" fill="#1a0a04" />
+                    <ellipse cx="246" cy="290" rx="14" ry="9" fill="#ff6090" transform="rotate(20,246,290)" />
+                    <ellipse cx="225" cy="283" rx="14" ry="9" fill="#ff6090" transform="rotate(-20,225,283)" />
+                    <circle cx="236" cy="287" r="6" fill="#ff4070" />
+                    <ellipse cx="209" cy="315" rx="7" ry="7" fill="#1a0a04" /><ellipse cx="231" cy="315" rx="7" ry="7" fill="#1a0a04" />
+                    <path d="M204 330 Q220 344 236 330" fill="#d06040" /><rect x="209" y="331" width="22" height="10" rx="2" fill="white" />
+                    <ellipse cx="220" cy="446" rx="38" ry="70" fill="#ffcc44" />
+                    <ellipse cx="270" cy="224" rx="32" ry="36" fill="#7a4820" /><ellipse cx="270" cy="202" rx="32" ry="22" fill="#1a0804" />
+                    <ellipse cx="259" cy="224" rx="5" ry="5" fill="#1a0a04" /><ellipse cx="281" cy="224" rx="5" ry="5" fill="#1a0a04" />
+                    <path d="M256 239 Q270 252 284 239" stroke="#5a2a10" stroke-width="2" fill="none" stroke-linecap="round" />
+                    <ellipse cx="270" cy="302" rx="40" ry="60" fill="#5878b0" />
+                    <defs>
+                        <linearGradient id="gr" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="transparent" />
+                            <stop offset="40%" stop-color="#3D0C11" stop-opacity=".04" />
+                            <stop offset="66%" stop-color="#3D0C11" stop-opacity=".52" />
+                            <stop offset="100%" stop-color="#fff" stop-opacity="1" />
+                        </linearGradient>
+                    </defs>
+                    <rect width="430" height="520" fill="url(#gr)" />
+                </svg>
+                <div class="hbar">
+                    <span class="logo" style="font-size:22px;color:#FFE500">SENDWAVES</span>
+                    <button onclick="go('p-login')" style="background:none;border:none;color:#FFE500;font-size:16px;font-weight:700;cursor:pointer;text-decoration:underline">Log in</button>
+                </div>
+                <div class="hhl"><h1>RECEIVE<br />MONEY<br />QUICKLY &<br />SECURELY</h1></div>
+            </div>
+            <div style="padding:18px 18px max(26px,env(safe-area-inset-bottom));background:#fff;flex-shrink:0">
+                <button class="by" onclick="go('p-signup')">Sign up</button>
+                <div style="display:flex;align-items:center;gap:10px;margin:12px 0"><div style="flex:1;height:1px;background:#eee"></div><span style="font-size:13px;color:#bbb">or</span><div style="flex:1;height:1px;background:#eee"></div></div>
+                <button class="bo" onclick="go('p-signup')">
+                    <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                    Continue with Google
+                </button>
+                <button class="bo" onclick="go('p-signup')">
+                    <svg width="16" height="16" viewBox="0 0 814 1000"><path fill="#000" d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-37.5-155.5-127.4C46 386.5 0 285 0 189 0 91 55.6 33 167.8 33c59.8 0 107.1 27.4 143.8 27.4 33.5 0 87.3-29.1 148.5-29.1 21.2 0 93.7 2 157.5 64.3zm-220.6-130.2C535.9 184.7 566 151.5 566 112.7c0-3.8-.6-7.7-1.3-11.5-32.5 1.3-70.3 21.9-93.2 47.5C453.4 172.6 425.5 209 425.5 251.7c0 3.8.6 7.7 1.3 11.5 2.6.3 5.2.3 7.7.3 29.7 0 64.5-20 133-152.8z"/></svg>
+                    Continue with Apple
+                </button>
+                <div style="text-align:center;margin-top:10px"><button style="background:none;border:none;color:#009688;font-size:14px;cursor:pointer;text-decoration:underline">Check our exchange rate</button></div>
+            </div>
+        </div>
+
+        <!-- ========== SIGNUP ========== -->
+        <div class="pg" id="p-signup">
+            <div class="top"><button onclick="go('p-land')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#000;padding:0 8px 0 0">←</button><span class="logo" style="font-size:17px;color:#000">SENDWAVES</span><div></div></div>
+            <div class="scr" style="padding:22px 18px">
+                <h2 style="font-size:24px;font-weight:700;color:#000;margin-bottom:6px">Create your account</h2>
+                <p style="font-size:14px;color:#666;margin-bottom:20px">Enter your details to get started.</p>
+                <div class="fld"><label class="lb">First name</label><input id="su-fn" placeholder="First name" /></div>
+                <div class="fld"><label class="lb">Last name</label><input id="su-ln" placeholder="Last name" /></div>
+                <div class="fld"><label class="lb">Phone number</label>
+                    <div style="display:flex;gap:8px">
+                        <select id="su-cc" style="width:110px;flex-shrink:0"><option value="1">🇺🇸 +1</option><option value="44">🇬🇧 +44</option><option value="254" selected>🇰🇪 +254</option></select>
+                        <input id="su-ph" type="tel" placeholder="712 345 678" />
+                    </div>
+                </div>
+                <div class="fld"><label class="lb">Password</label><input id="su-pw" type="password" placeholder="Min 6 characters" /></div>
+                <div class="err" id="su-err"></div>
+                <button class="by" id="su-btn" onclick="doSignup()">Create Account</button>
+                <p style="font-size:11px;color:#aaa;text-align:center;margin-top:14px;line-height:1.6">By continuing you agree to our <a href="#" style="color:#009688">Terms</a> and <a href="#" style="color:#009688">Privacy Policy</a></p>
+            </div>
+        </div>
+
+        <!-- ========== LOGIN ========== -->
+        <div class="pg" id="p-login">
+            <div class="top"><button onclick="go('p-land')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#000;padding:0 8px 0 0">←</button><span class="logo" style="font-size:17px;color:#000">SENDWAVES</span><div></div></div>
+            <div class="scr" style="padding:22px 18px">
+                <h2 style="font-size:24px;font-weight:700;color:#000;margin-bottom:6px">Welcome back</h2>
+                <p style="font-size:14px;color:#888;margin-bottom:26px">Log in to your account</p>
+                <div class="fld"><label class="lb">Phone number</label><input id="li-ph" type="tel" placeholder="0712345678 or +254712345678" /></div>
+                <div class="fld"><label class="lb">Password</label><input id="li-pw" type="password" placeholder="••••••••" /></div>
+                <div class="err" id="li-err"></div>
+                <button class="by" id="li-btn" onclick="doLogin()" style="margin-top:8px">Log in</button>
+                <div style="text-align:center;margin-top:16px"><button onclick="go('p-signup')" style="background:none;border:none;color:#009688;font-size:14px;cursor:pointer">Don't have an account? Sign up</button></div>
+            </div>
+        </div>
+
+        <!-- ========== HOME ========== -->
+        <div class="pg" id="p-home" style="background:#f5f5f5">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:max(44px,env(safe-area-inset-top)) 18px 14px;background:#fff;flex-shrink:0">
+                <div id="hav" onclick="openD()" style="width:44px;height:44px;border-radius:22px;border:1.5px solid #e0e0e0;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#444;cursor:pointer">SK</div>
+                <button onclick="oSh('sh-help')" style="background:none;border:1.5px solid #e0e0e0;border-radius:50%;cursor:pointer;width:38px;height:38px;display:flex;align-items:center;justify-content:center">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".6" fill="#555"/></svg>
+                </button>
+            </div>
+            <div style="background:#fff;padding:4px 18px 18px;flex-shrink:0">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+                    <span style="font-size:15px;color:#777">Total balance</span>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r=".5" fill="#ccc"/></svg>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+                    <span id="hbal" style="font-size:46px;font-weight:800;color:#000;letter-spacing:-2px;line-height:1">$0.00</span>
+                    <button onclick="tBal()" style="background:none;border:none;cursor:pointer;padding:4px">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.8" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </div>
+                <div style="display:flex;gap:22px">
+                    <div onclick="oSh('sh-send')" style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer">
+                        <div style="width:58px;height:58px;border-radius:29px;background:#FFE500;display:flex;align-items:center;justify-content:center">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        </div>
+                        <span style="font-size:13px;font-weight:600;color:#1a1a1a">Send</span>
+                    </div>
+                    <div onclick="oSh('sh-add')" style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer">
+                        <div style="width:58px;height:58px;border-radius:29px;background:#FFF9C4;display:flex;align-items:center;justify-content:center">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        </div>
+                        <span style="font-size:13px;font-weight:600;color:#1a1a1a">Add</span>
+                    </div>
+                    <div onclick="oSh('sh-wd')" style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer">
+                        <div style="width:58px;height:58px;border-radius:29px;background:#FFF9C4;display:flex;align-items:center;justify-content:center">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        </div>
+                        <span style="font-size:13px;font-weight:600;color:#1a1a1a">Withdraw</span>
+                    </div>
+                </div>
+            </div>
+            <div style="height:8px;background:#f0f0f0;flex-shrink:0"></div>
+            <div class="scr" style="padding:16px 18px;background:#fff" id="htx">
+                <div id="hemp" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;text-align:center">
+                    <svg width="88" height="76" viewBox="0 0 88 76" style="margin-bottom:16px"><rect x="8" y="22" width="72" height="44" rx="8" fill="#eee"/><rect x="8" y="22" width="72" height="14" rx="4" fill="#e0e0e0"/><circle cx="66" cy="50" r="7" fill="#d8d8d8"/><circle cx="38" cy="12" r="11" fill="#e4e4e4"/><text x="38" y="17" text-anchor="middle" font-size="11" fill="#c0c0c0" font-weight="700">$</text></svg>
+                    <div style="font-size:17px;font-weight:700;color:#1a1a1a;margin-bottom:8px">No Recent Activity</div>
+                    <div style="font-size:14px;color:#aaa">All of your activity will appear here</div>
+                </div>
+            </div>
+            <div class="bnav">
+                <div class="bni" onclick="openD()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+                <div class="bni"><div style="width:34px;height:34px;border-radius:17px;border:2.5px solid #000;display:flex;align-items:center;justify-content:center"><div style="width:10px;height:10px;border-radius:5px;background:#000"></div></div></div>
+                <div class="bni" onclick="logout()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg></div>
+            </div>
+        </div>
+
+        <!-- ========== ACTIVITY ========== -->
+        <div class="pg" id="p-act">
+            <div class="top"><button onclick="go('p-home')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#000;padding:0 8px 0 0">←</button><span style="font-size:19px;font-weight:700;color:#000">Activity</span><div></div></div>
+            <div style="display:flex;gap:7px;padding:10px 16px;overflow-x:auto;flex-shrink:0">
+                <div id="fa-all" onclick="fTx('all',this)" style="padding:7px 16px;border-radius:50px;font-size:13px;font-weight:600;background:#000;color:#fff;border:1px solid #000;cursor:pointer;white-space:nowrap">All</div>
+                <div id="fa-sent" onclick="fTx('sent',this)" style="padding:7px 16px;border-radius:50px;font-size:13px;font-weight:600;background:#fff;color:#555;border:1px solid #e0e0e0;cursor:pointer;white-space:nowrap">Sent</div>
+                <div id="fa-add" onclick="fTx('added',this)" style="padding:7px 16px;border-radius:50px;font-size:13px;font-weight:600;background:#fff;color:#555;border:1px solid #e0e0e0;cursor:pointer;white-space:nowrap">Added</div>
+            </div>
+            <div class="scr" style="padding:0 16px 16px" id="atx"><div style="text-align:center;padding:50px;color:#bbb;font-size:14px">No transactions yet</div></div>
+            <div class="bnav">
+                <div class="bni" onclick="openD()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+                <div class="bni" onclick="go('p-home')"><div style="width:34px;height:34px;border-radius:17px;border:2.5px solid #ccc;display:flex;align-items:center;justify-content:center"><div style="width:10px;height:10px;border-radius:5px;background:#ccc"></div></div></div>
+                <div class="bni" onclick="go('p-home')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg></div>
+            </div>
+        </div>
+
+        <!-- ========== PROFILE ========== -->
+        <div class="pg" id="p-prof" style="background:#f5f5f5">
+            <div style="background:#FFE500;padding:max(44px,env(safe-area-inset-top)) 18px 22px;flex-shrink:0">
+                <div style="display:flex;align-items:center;gap:14px">
+                    <div id="pav" style="width:56px;height:56px;border-radius:28px;background:#000;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:#FFE500">SK</div>
+                    <div><div id="pnm" style="font-size:18px;font-weight:800;color:#000">User</div><div id="pph" style="font-size:12px;color:rgba(0,0,0,.55);margin-top:2px">sendwaves.xyz</div><div style="display:inline-block;margin-top:5px;padding:2px 10px;border-radius:50px;background:#000;color:#FFE500;font-size:11px;font-weight:700">✓ Verified</div></div>
+                </div>
+            </div>
+            <div class="scr" style="padding:12px 14px">
+                <div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:14px"><span>👤</span><div style="flex:1;font-size:14px;font-weight:600;color:#000">Personal information</div><span style="color:#ccc">›</span></div>
+                <div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:14px"><span>💳</span><div style="flex:1;font-size:14px;font-weight:600;color:#000">Payment methods</div><span style="color:#ccc">›</span></div>
+                <div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:14px"><span>🔒</span><div style="flex:1;font-size:14px;font-weight:600;color:#000">Security & privacy</div><span style="color:#ccc">›</span></div>
+                <div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:14px"><span>🎁</span><div style="flex:1;font-size:14px;font-weight:600;color:#000">Refer a friend</div><span style="padding:2px 10px;border-radius:50px;background:#FFE500;color:#000;font-size:11px;font-weight:700;margin-right:6px">Earn $10</span><span style="color:#ccc">›</span></div>
+                <div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:14px"><span>🌍</span><div style="flex:1;font-size:14px;font-weight:600;color:#000">Exchange rates</div><span style="color:#ccc">›</span></div>
+                <button onclick="logout()" style="width:100%;padding:14px;background:transparent;border:1.5px solid #ffcdd2;border-radius:50px;font-size:15px;font-weight:700;color:#c62828;cursor:pointer;margin-top:6px">Log out</button>
+                <p style="text-align:center;font-size:11px;color:#bbb;margin-top:14px">sendwaves.xyz · v2.0.0</p>
+            </div>
+            <div class="bnav" style="background:#fff">
+                <div class="bni" onclick="openD()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+                <div class="bni" onclick="go('p-home')"><div style="width:34px;height:34px;border-radius:17px;border:2.5px solid #ccc;display:flex;align-items:center;justify-content:center"><div style="width:10px;height:10px;border-radius:5px;background:#ccc"></div></div></div>
+                <div class="bni" onclick="logout()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg></div>
+            </div>
+        </div>
+
+        <!-- ========== DRAWER ========== -->
+        <div class="dov" id="dov" onclick="closeD()"></div>
+        <div class="drw" id="drw">
+            <div style="background:#FFE500;padding:max(44px,env(safe-area-inset-top)) 18px 20px">
+                <div id="dav" style="width:50px;height:50px;border-radius:25px;background:#000;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;color:#FFE500;margin-bottom:10px">SK</div>
+                <div id="dnm" style="font-size:16px;font-weight:800;color:#000">User</div>
+                <div style="font-size:12px;color:rgba(0,0,0,.6);margin-top:2px">sendwaves.xyz</div>
+            </div>
+            <div class="dri" onclick="closeD();go('p-home')">🏠 Home</div>
+            <div class="dri" onclick="closeD();go('p-act');loadTx()">📋 Activity</div>
+            <div class="dri" onclick="closeD();go('p-prof')">👤 Profile</div>
+            <div class="dri" onclick="closeD();oSh('sh-send')">↗️ Send Money</div>
+            <div class="dri" onclick="closeD();oSh('sh-add')">➕ Add Funds</div>
+            <div class="dri" onclick="closeD();oSh('sh-help')">❓ Help</div>
+            <div class="dri" style="color:#c62828" onclick="logout()">🚪 Log out</div>
+        </div>
+
+        <!-- ========== SHEETS ========== -->
+
+        <!-- Withdraw -->
+        <div class="ov" id="sh-wd" onclick="bgC(event,'sh-wd')">
+            <div class="sh"><div class="hdl"></div>
+                <div style="text-align:center;padding:8px 0 16px">
+                    <div style="width:64px;height:64px;border-radius:32px;background:#fff3cd;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:28px">⚠️</div>
+                    <h3 style="font-size:18px;font-weight:700;color:#000;margin-bottom:10px">Withdrawal Limit Reached</h3>
+                    <p style="font-size:14px;color:#555;line-height:1.65;margin-bottom:8px">Your account is set to <strong>Send Only</strong>. Bank withdrawals are not available.</p>
+                    <p style="font-size:14px;color:#555;line-height:1.65">Funds can only be sent to mobile money recipients. Contact support to unlock withdrawals.</p>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:8px">
+                    <button onclick="cSh('sh-wd')" style="flex:1;padding:14px;background:#f0f0f0;border:none;border-radius:50px;font-size:14px;font-weight:600;cursor:pointer">Close</button>
+                    <button style="flex:1;padding:14px;background:#FFE500;border:none;border-radius:50px;font-size:14px;font-weight:700;cursor:pointer">Contact Support</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Funds -->
+        <div class="ov" id="sh-add" onclick="bgC(event,'sh-add')">
+            <div class="sh"><div class="hdl"></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+                    <h3 style="font-size:18px;font-weight:700;color:#000">Add Funds</h3>
+                    <button onclick="cSh('sh-add')" style="background:none;border:none;font-size:26px;cursor:pointer;color:#aaa;line-height:1">×</button>
+                </div>
+                <div style="background:#e8f5e9;border:1px solid #c8e6c9;border-radius:12px;padding:12px 14px;display:flex;gap:8px;margin-bottom:14px"><span>💡</span><span style="font-size:13px;color:#2e7d32;line-height:1.5">Enter amount in USD. Funds are added to your wallet instantly.</span></div>
+                <div class="fld"><label class="lb">Amount (USD)</label><input id="add-usd" type="number" placeholder="e.g. 100" oninput="prvA()" /></div>
+                <div style="background:#f7f7f7;border-radius:12px;padding:12px 14px;margin-bottom:14px">
+                    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span style="color:#888">Rate</span><span style="font-weight:600;color:#000">1 USD = 129.5 KES</span></div>
+                    <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:#888">KES equivalent</span><span id="add-kes-prv" style="font-weight:700;color:#009688">0 KES</span></div>
+                </div>
+                <div class="err" id="add-err"></div>
+                <button class="by" id="add-btn" onclick="doAdd()">Add Funds Instantly</button>
+            </div>
+        </div>
+
+        <!-- Send -->
+        <div class="ov" id="sh-send" onclick="bgC(event,'sh-send')">
+            <div class="sh"><div class="hdl"></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+                    <h3 style="font-size:18px;font-weight:700;color:#000">Send via M-Pesa</h3>
+                    <button onclick="cSh('sh-send');rSend()" style="background:none;border:none;font-size:26px;cursor:pointer;color:#aaa;line-height:1">×</button>
+                </div>
+                <div style="display:flex;gap:6px;margin-bottom:18px" id="dots">
+                    <div class="dot on"></div><div class="dot"></div><div class="dot"></div>
+                </div>
+                <div id="s1">
+                    <div class="fld"><label class="lb">Recipient M-Pesa Number</label><input id="sph" type="tel" placeholder="07XX XXX XXX" /></div>
+                    <div class="fld"><label class="lb">Recipient Name (Safaricom)</label><input id="snm" placeholder="e.g. James Mwangi" /></div>
+                    <div class="fld"><label class="lb">Amount (USD)</label><input id="sam" type="number" placeholder="e.g. 50" oninput="pS()" /></div>
+                    <div style="background:#f7f7f7;border-radius:12px;padding:12px 14px;margin-bottom:14px">
+                        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span style="color:#888">Rate</span><span style="font-weight:600;color:#000">1 USD = 129.5 KES</span></div>
+                        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span style="color:#888">They receive</span><span id="sks" style="font-weight:700;color:#000">0 KES</span></div>
+                        <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:#888">Fee</span><span style="font-weight:700;color:#009688">Free ✓</span></div>
+                    </div>
+                    <div class="err" id="send-err"></div>
+                    <button class="by" id="send-btn" onclick="sGo()">Continue →</button>
+                </div>
+                <div id="s2" style="display:none;flex-direction:column;align-items:center;text-align:center;padding:24px 0;min-height:260px;justify-content:center;width:100%">
+                    <p style="font-size:17px;font-weight:700;color:#000;margin-bottom:8px">Sending to M-Pesa...</p>
+                    <p id="slb" style="font-size:14px;color:#888;margin-bottom:32px"></p>
+                    <div class="spin" style="margin-bottom:24px"></div>
+                    <p id="smg" style="font-size:14px;color:#aaa">Connecting to Safaricom...</p>
+                </div>
+                <div id="s3" style="display:none;flex-direction:column;align-items:center;text-align:center;padding:16px 0;min-height:320px;justify-content:center;width:100%">
+                    <div class="tick">
+                        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                    </div>
+                    <h3 style="font-size:22px;font-weight:800;color:#000;margin-bottom:10px">Transfer Successful!</h3>
+                    <p id="ok1" style="font-size:15px;color:#333;font-weight:600;margin-bottom:4px;padding:0 8px"></p>
+                    <p id="ok2" style="font-size:13px;color:#888;margin-bottom:22px;padding:0 8px"></p>
+                    <div style="background:#f7f7f7;border-radius:14px;padding:14px 16px;width:100%;text-align:left;margin-bottom:22px">
+                        <div style="font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Transaction Reference</div>
+                        <div id="okrf" style="font-size:16px;font-weight:800;color:#000;word-break:break-all"></div>
+                        <div id="oktm" style="font-size:11px;color:#aaa;margin-top:4px"></div>
+                    </div>
+                    <button class="by" onclick="sDone()">Done ✓</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help -->
+        <div class="ov" id="sh-help" onclick="bgC(event,'sh-help')">
+            <div class="sh"><div class="hdl"></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+                    <h3 style="font-size:18px;font-weight:700;color:#000">Help & FAQ</h3>
+                    <button onclick="cSh('sh-help')" style="background:none;border:none;font-size:26px;cursor:pointer;color:#aaa;line-height:1">×</button>
+                </div>
+                <div style="background:#e8f5e9;border:1px solid #c8e6c9;border-radius:12px;padding:12px 14px;display:flex;gap:8px;margin-bottom:14px"><span>✅</span><span style="font-size:13px;color:#2e7d32">sendwaves.xyz is SSL secured & database powered.</span></div>
+                <div style="font-size:14px;color:#444;line-height:1.8">
+                    <p style="margin-bottom:12px"><strong style="color:#000">Transfer speed?</strong><br />Transfers complete instantly.</p>
+                    <p style="margin-bottom:12px"><strong style="color:#000">Exchange rate?</strong><br />1 USD = 129.5 KES, updated daily.</p>
+                    <p style="margin-bottom:12px"><strong style="color:#000">Fees?</strong><br />Zero — what you send is what they get.</p>
+                    <p><strong style="color:#000">Support:</strong> support@sendwaves.xyz</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast -->
+        <div class="toast" id="toast"></div>
+
+    </div>
+
+    <script>
+        // ================================================================
+        //  CONFIG
+        // ================================================================
+        // Set API_BASE to your server URL. If you're using the provided
+        // server.js, leave it as '/api' (same origin).
+        // For local testing with the server running on port 3000:
+        const API_BASE = '/api';
+
+        // ================================================================
+        //  STATE
+        // ================================================================
+        var token = localStorage.getItem('sw_token') || '';
+        var userName = localStorage.getItem('sw_name') || '';
+        var bal = 0,
+            bv = true,
+            allTx = [],
+            txf = 'all',
+            cur = 'p-splash';
+
+        // ================================================================
+        //  API HELPER
+        // ================================================================
+        async function api(method, path, body) {
+            const opts = {
+                method,
+                headers: { 'Content-Type': 'application/json' }
+            };
+            if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+            if (body) opts.body = JSON.stringify(body);
+
+            const r = await fetch(API_BASE + path, opts);
+            let d;
+            try {
+                d = await r.json();
+            } catch (_) {
+                throw new Error('Server returned invalid JSON. Make sure the backend is running.');
+            }
+            if (!r.ok) throw new Error(d.error || 'Request failed');
+            return d;
+        }
+
+        // ================================================================
+        //  HELPERS
+        // ================================================================
+        function inits(n) {
+            var p = (n || 'U').trim().split(' ');
+            return p.length >= 2 ? (p[0][0] + p[1][0]).toUpperCase() : (n || 'U').slice(0, 2).toUpperCase();
+        }
+
+        function mask(p) {
+            if (!p) return '';
+            var d = p.replace(/\D/g, '');
+            return d.length >= 9 ? d.slice(0, 4) + '***' + d.slice(-1) : p;
+        }
+
+        function fmtDate(s) {
+            try {
+                var d = new Date(s);
+                return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + ' ' +
+                    d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+            } catch (_) { return ''; }
+        }
+
+        function toast(msg, type) {
+            var el = document.getElementById('toast');
+            if (!el) return;
+            el.textContent = msg;
+            el.className = 'toast show' + (type ? ' ' + type : '');
+            clearTimeout(el._t);
+            el._t = setTimeout(function() { el.classList.remove('show'); }, 3500);
+        }
+
+        // ================================================================
+        //  USER & UI
+        // ================================================================
+        function setUser(name, t) {
+            token = t;
+            userName = name;
+            localStorage.setItem('sw_token', t);
+            localStorage.setItem('sw_name', name);
+            var av = inits(name);
+            ['hav', 'pav', 'dav'].forEach(function(id) {
+                var e = document.getElementById(id);
+                if (e) e.textContent = av;
+            });
+            ['pnm', 'dnm'].forEach(function(id) {
+                var e = document.getElementById(id);
+                if (e) e.textContent = name;
+            });
+        }
+
+        function updBal(b) {
+            bal = parseFloat(b) || 0;
+            var el = document.getElementById('hbal');
+            if (el) el.textContent = bv ? '$' + bal.toFixed(2) : '$ ••••';
+        }
+
+        function tBal() { bv = !bv;
+            updBal(bal); }
+
+        // ================================================================
+        //  NAVIGATION
+        // ================================================================
+        function go(id) {
+            var c = document.getElementById(cur);
+            var n = document.getElementById(id);
+            if (!n) return;
+            if (c) { c.classList.remove('cur');
+                c.classList.add('out'); }
+            n.classList.add('cur');
+            setTimeout(function() { if (c) c.classList.remove('out'); }, 300);
+            cur = id;
+            if (id === 'p-act') loadTx();
+        }
+
+        function oSh(id) { var e = document.getElementById(id); if (e) e.classList.add('on'); }
+
+        function cSh(id) { var e = document.getElementById(id); if (e) e.classList.remove('on'); }
+
+        function bgC(e, id) { if (e.target.classList.contains('ov')) cSh(id); }
+
+        function openD() { document.getElementById('drw').classList.add('on');
+            document.getElementById('dov').classList.add('on'); }
+
+        function closeD() { document.getElementById('drw').classList.remove('on');
+            document.getElementById('dov').classList.remove('on'); }
+
+        function logout() {
+            token = '';
+            userName = '';
+            bal = 0;
+            allTx = [];
+            localStorage.removeItem('sw_token');
+            localStorage.removeItem('sw_name');
+            go('p-land');
+            toast('Logged out', '');
+        }
+
+        // ================================================================
+        //  TRANSACTION RENDER
+        // ================================================================
+        function txRow(t) {
+            var s = t.type === 'sent';
+            var nm = s ? (t.recipient_name || 'Unknown') : 'Wallet Top-up';
+            var statusColor = t.status === 'completed' ? '#2e7d32' : '#856404';
+            var statusBg = t.status === 'completed' ? '#e8f5e9' : '#fff8e1';
+            return '<div class="txr">' +
+                '<div class="txav" style="background:' + (s ? '#FFE500' : '#e8f5e9') + ';color:' + (s ? '#000' : '#2e7d32') +
+                '">' + inits(nm) + '</div>' +
+                '<div style="flex:1;min-width:0">' +
+                '<div style="font-size:14px;font-weight:600;color:#000;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+                nm + '</div>' +
+                '<div style="font-size:12px;color:#aaa;margin-top:2px">' + (s ? mask(t.recipient_phone || '') + ' · ' : '') +
+                fmtDate(t.created_at) + '</div>' +
+                '<div style="font-size:10px;margin-top:3px;padding:1px 7px;border-radius:4px;display:inline-block;background:' +
+                statusBg + ';color:' + statusColor + '">' + t.status + '</div>' +
+                '</div>' +
+                '<div style="text-align:right;flex-shrink:0;margin-left:8px">' +
+                '<div style="font-size:14px;font-weight:700;color:' + (s ? '#c62828' : '#2e7d32') + '">' + (s ? '−' : '+') +
+                ' $' + parseFloat(t.amount_usd).toFixed(2) + '</div>' +
+                '<div style="font-size:11px;color:#aaa;margin-top:2px">' + Math.round(parseFloat(t.amount_kes))
+                .toLocaleString() + ' KES</div>' +
+                '</div>' +
+                '</div>';
+        }
+
+        function renderHome() {
+            var el = document.getElementById('htx');
+            var em = document.getElementById('hemp');
+            if (!el) return;
+            if (!allTx.length) { if (em) em.style.display = 'flex'; return; }
+            if (em) em.style.display = 'none';
+            var h = '<div style="font-size:12px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">Recent Activity</div>';
+            allTx.slice(0, 10).forEach(function(t) { h += txRow(t); });
+            el.innerHTML = h;
+        }
+
+        function renderAct() {
+            var filtered = txf === 'all' ? allTx : allTx.filter(function(t) { return t.type === txf; });
+            var el = document.getElementById('atx');
+            if (el) el.innerHTML = filtered.length ? filtered.map(txRow).join('') :
+                '<div style="text-align:center;padding:50px;color:#bbb;font-size:14px">No transactions</div>';
+        }
+
+        function fTx(f, el) {
+            txf = f;
+            ['fa-all', 'fa-sent', 'fa-add'].forEach(function(id) {
+                var c = document.getElementById(id);
+                if (c) { c.style.background = '#fff';
+                    c.style.color = '#555';
+                    c.style.borderColor = '#e0e0e0'; }
+            });
+            el.style.background = '#000';
+            el.style.color = '#fff';
+            el.style.borderColor = '#000';
+            renderAct();
+        }
+
+        // ================================================================
+        //  API CALLS
+        // ================================================================
+        async function loadTx() {
+            try {
+                var data = await api('GET', '/transactions');
+                allTx = data || [];
+                renderHome();
+                renderAct();
+            } catch (e) {
+                console.error('loadTx:', e.message);
+                // If the server is not available, fall back to localStorage
+                var cached = localStorage.getItem('sw_tx_cache');
+                if (cached) {
+                    try {
+                        allTx = JSON.parse(cached);
+                        renderHome();
+                        renderAct();
+                    } catch (_) {}
+                }
+            }
+        }
+
+        async function loadMe() {
+            try {
+                var data = await api('GET', '/me');
+                updBal(data.balance);
+                await loadTx();
+                return true;
+            } catch (e) {
+                console.error('loadMe:', e.message);
+                // Try to restore from cache
+                var cached = localStorage.getItem('sw_balance');
+                if (cached) updBal(parseFloat(cached));
+                var cachedTx = localStorage.getItem('sw_tx_cache');
+                if (cachedTx) {
+                    try {
+                        allTx = JSON.parse(cachedTx);
+                        renderHome();
+                        renderAct();
+                    } catch (_) {}
+                }
+                return false;
+            }
+        }
+
+        // ================================================================
+        //  SIGNUP
+        // ================================================================
+        async function doSignup() {
+            var fn = (document.getElementById('su-fn').value || '').trim();
+            var ln = (document.getElementById('su-ln').value || '').trim();
+            var ph = (document.getElementById('su-ph').value || '').trim();
+            var pw = (document.getElementById('su-pw').value || '').trim();
+            var cc = document.getElementById('su-cc').value;
+            var err = document.getElementById('su-err');
+            if (!fn || !ln) { err.textContent = 'Please enter your full name'; return; }
+            if (!ph) { err.textContent = 'Please enter your phone number'; return; }
+            if (pw.length < 6) { err.textContent = 'Password must be at least 6 characters'; return; }
+            var fullPhone = '+' + cc + ph.replace(/^0/, '');
+            var btn = document.getElementById('su-btn');
+            btn.disabled = true;
+            btn.textContent = 'Creating account...';
+            err.textContent = '';
+            try {
+                var data = await api('POST', '/signup', { first_name: fn, last_name: ln, phone: fullPhone, password: pw });
+                setUser(data.name, data.token);
+                updBal(data.balance);
+                allTx = [];
+                renderHome();
+                localStorage.setItem('sw_balance', String(data.balance));
+                localStorage.removeItem('sw_tx_cache');
+                go('p-home');
+                toast('Account created! Welcome to Sendwaves.', 'success');
+            } catch (e) {
+                err.textContent = e.message;
+                toast(e.message, 'error');
+                btn.disabled = false;
+                btn.textContent = 'Create Account';
+            }
+        }
+
+        // ================================================================
+        //  LOGIN
+        // ================================================================
+        async function doLogin() {
+            var ph = (document.getElementById('li-ph').value || '').trim();
+            var pw = (document.getElementById('li-pw').value || '').trim();
+            var err = document.getElementById('li-err');
+            if (!ph || !pw) { err.textContent = 'Please fill in all fields'; return; }
+            var btn = document.getElementById('li-btn');
+            btn.disabled = true;
+            btn.textContent = 'Logging in...';
+            err.textContent = '';
+            try {
+                var data = await api('POST', '/login', { phone: ph, password: pw });
+                setUser(data.name, data.token);
+                updBal(data.balance);
+                localStorage.setItem('sw_balance', String(data.balance));
+                await loadTx();
+                go('p-home');
+                toast('Welcome back, ' + data.name + '!', 'success');
+            } catch (e) {
+                err.textContent = e.message;
+                toast(e.message, 'error');
+                btn.disabled = false;
+                btn.textContent = 'Log in';
+            }
+        }
+
+        // ================================================================
+        //  ADD FUNDS
+        // ================================================================
+        function prvA() {
+            var v = parseFloat(document.getElementById('add-usd').value) || 0;
+            document.getElementById('add-kes-prv').textContent = Math.round(v * 129.5).toLocaleString() + ' KES';
+        }
+
+        async function doAdd() {
+            var usd = parseFloat(document.getElementById('add-usd').value);
+            var err = document.getElementById('add-err');
+            if (isNaN(usd) || usd <= 0) { err.textContent = 'Enter a valid amount'; return; }
+            var btn = document.getElementById('add-btn');
+            btn.disabled = true;
+            btn.textContent = 'Adding...';
+            err.textContent = '';
+            try {
+                var data = await api('POST', '/add-funds', { amount_usd: usd });
+                updBal(data.new_balance);
+                localStorage.setItem('sw_balance', String(data.new_balance));
+                await loadTx();
+                cSh('sh-add');
+                document.getElementById('add-usd').value = '';
+                document.getElementById('add-kes-prv').textContent = '0 KES';
+                toast('$' + usd.toFixed(2) + ' added successfully!', 'success');
+            } catch (e) {
+                err.textContent = e.message;
+                toast(e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Add Funds Instantly';
+            }
+        }
+
+        // ================================================================
+        //  SEND
+        // ================================================================
+        function pS() {
+            var v = parseFloat(document.getElementById('sam').value) || 0;
+            document.getElementById('sks').textContent = Math.round(v * 129.5).toLocaleString() + ' KES';
+        }
+
+        function step(a, b, c) {
+            var s1 = document.getElementById('s1');
+            var s2 = document.getElementById('s2');
+            var s3 = document.getElementById('s3');
+            if (s1) s1.style.display = a ? 'block' : 'none';
+            if (s2) s2.style.display = b ? 'flex' : 'none';
+            if (s3) s3.style.display = c ? 'flex' : 'none';
+            var dd = document.getElementById('dots');
+            if (dd) {
+                var d = dd.querySelectorAll('.dot');
+                if (d[0]) d[0].className = 'dot' + (a || b || c ? ' on' : '');
+                if (d[1]) d[1].className = 'dot' + (b || c ? ' on' : '');
+                if (d[2]) d[2].className = 'dot' + (c ? ' on' : '');
+            }
+        }
+
+        function rSend() {
+            step(true, false, false);
+            ['sph', 'snm', 'sam'].forEach(function(i) { var e = document.getElementById(i); if (e) e.value = ''; });
+            var sk = document.getElementById('sks');
+            if (sk) sk.textContent = '0 KES';
+            var se = document.getElementById('send-err');
+            if (se) se.textContent = '';
+            var sb = document.getElementById('send-btn');
+            if (sb) { sb.disabled = false;
+                sb.textContent = 'Continue →'; }
+        }
+
+        async function sGo() {
+            var ph = (document.getElementById('sph').value || '').trim();
+            var nm = (document.getElementById('snm').value || '').trim();
+            var amt = parseFloat(document.getElementById('sam').value);
+            var err = document.getElementById('send-err');
+            err.textContent = '';
+            if (!ph) { err.textContent = 'Enter recipient phone number'; return; }
+            if (!nm) { err.textContent = 'Enter recipient name'; return; }
+            if (isNaN(amt) || amt <= 0) { err.textContent = 'Enter a valid amount'; return; }
+            if (amt > bal) { err.textContent = 'Insufficient balance. Add funds first.'; return; }
+
+            step(false, true, false);
+            var lb = document.getElementById('slb');
+            if (lb) lb.textContent = nm + ' · ' + mask(ph);
+            var msgs = ['Connecting to Safaricom...', 'Verifying recipient...', 'Processing transfer...',
+                'Almost done...'
+            ];
+            var mi = 0;
+            var iv = setInterval(function() {
+                mi++;
+                if (mi < msgs.length) { var mg = document.getElementById('smg'); if (mg) mg.textContent = msgs[mi]; }
+            }, 600);
+
+            try {
+                var data = await api('POST', '/send', { recipient_name: nm, recipient_phone: ph, amount_usd: amt });
+                clearInterval(iv);
+
+                bal = parseFloat((bal - amt).toFixed(2));
+                var hb = document.getElementById('hbal');
+                if (hb) hb.textContent = '$' + bal.toFixed(2);
+                localStorage.setItem('sw_balance', String(bal));
+
+                // Insert transaction locally
+                allTx.unshift({
+                    type: 'sent',
+                    recipient_name: nm,
+                    recipient_phone: ph,
+                    amount_usd: amt,
+                    amount_kes: Math.round(amt * 129.5),
+                    reference: data.reference,
+                    status: 'completed',
+                    created_at: new Date().toISOString()
+                });
+                localStorage.setItem('sw_tx_cache', JSON.stringify(allTx));
+                renderHome();
+
+                var ok1 = document.getElementById('ok1');
+                if (ok1) ok1.textContent = '$' + amt.toFixed(2) + ' sent to ' + nm;
+                var ok2 = document.getElementById('ok2');
+                if (ok2) ok2.textContent = Math.round(amt * 129.5).toLocaleString() + ' KES delivered via M-Pesa';
+                var okrf = document.getElementById('okrf');
+                if (okrf) okrf.textContent = data.reference;
+                var oktm = document.getElementById('oktm');
+                if (oktm) oktm.textContent = new Date().toLocaleTimeString();
+
+                step(false, false, true);
+                toast('Transfer successful!', 'success');
+
+            } catch (e) {
+                clearInterval(iv);
+                step(true, false, false);
+                if (document.getElementById('send-err')) document.getElementById('send-err').textContent = e.message;
+                toast(e.message, 'error');
+            }
+        }
+
+        function sDone() {
+            cSh('sh-send');
+            rSend();
+            loadTx();
+            go('p-home');
+        }
+
+        // ================================================================
+        //  BOOT
+        // ================================================================
+        setTimeout(function() {
+            if (token && userName) {
+                setUser(userName, token);
+                loadMe().then(function(ok) {
+                    if (ok) go('p-home');
+                    else { logout();
+                        go('p-land'); }
+                });
+            } else {
+                go('p-land');
+            }
+        }, 1400);
+    </script>
+
+</body>
+</html>
