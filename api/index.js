@@ -1,28 +1,25 @@
 const express = require('express');
 const cors = require('cors');
-const app = express();
-const PORT = 3000;
 
+const app = express();
 app.use(cors());
 app.use(express.json());
 
-// In-memory "database"
+// ---------- In-memory "database" (reset on each cold start) ----------
 let users = [];
 let transactions = [];
 let nextUserId = 1;
 let nextTxId = 1;
 
-// Helper: find user by phone
 function findUserByPhone(phone) {
   return users.find(u => u.phone === phone);
 }
 
-// Helper: generate a random reference
 function genRef() {
   return 'TX' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substring(2, 6).toUpperCase();
 }
 
-// ---------- SIGNUP ----------
+// ---------- Routes (exactly as before) ----------
 app.post('/api/signup', (req, res) => {
   const { first_name, last_name, phone, password } = req.body;
   if (!first_name || !last_name || !phone || !password) {
@@ -40,15 +37,13 @@ app.post('/api/signup', (req, res) => {
     first_name,
     last_name,
     phone,
-    password, // plain text for demo (never do this in production!)
+    password,
     balance: 0,
     created_at: new Date().toISOString()
   };
   users.push(newUser);
 
-  // Create a token (fake JWT)
   const token = 'fake-jwt-' + newUser.id + '-' + Date.now();
-
   res.json({
     token,
     name: first_name + ' ' + last_name,
@@ -56,7 +51,6 @@ app.post('/api/signup', (req, res) => {
   });
 });
 
-// ---------- LOGIN ----------
 app.post('/api/login', (req, res) => {
   const { phone, password } = req.body;
   if (!phone || !password) {
@@ -74,17 +68,12 @@ app.post('/api/login', (req, res) => {
   });
 });
 
-// ---------- GET /me ----------
 app.get('/api/me', (req, res) => {
   const auth = req.headers.authorization;
   if (!auth) return res.status(401).json({ error: 'Unauthorized' });
-  // Extract user id from fake token
   const parts = auth.split(' ');
-  if (parts.length !== 2 || parts[0] !== 'Bearer') {
-    return res.status(401).json({ error: 'Invalid token format' });
-  }
-  const token = parts[1];
-  const userId = parseInt(token.split('-')[2]);
+  if (parts.length !== 2 || parts[0] !== 'Bearer') return res.status(401).json({ error: 'Invalid token format' });
+  const userId = parseInt(parts[1].split('-')[2]);
   if (!userId) return res.status(401).json({ error: 'Invalid token' });
   const user = users.find(u => u.id === userId);
   if (!user) return res.status(401).json({ error: 'User not found' });
@@ -98,7 +87,6 @@ app.get('/api/me', (req, res) => {
   });
 });
 
-// ---------- ADD FUNDS ----------
 app.post('/api/add-funds', (req, res) => {
   const auth = req.headers.authorization;
   if (!auth) return res.status(401).json({ error: 'Unauthorized' });
@@ -114,13 +102,11 @@ app.post('/api/add-funds', (req, res) => {
     return res.status(400).json({ error: 'Amount must be positive' });
   }
   user.balance += amount_usd;
-
-  // Record transaction
   transactions.push({
     id: nextTxId++,
     user_id: user.id,
     type: 'added',
-    amount_usd: amount_usd,
+    amount_usd,
     amount_kes: Math.round(amount_usd * 129.5),
     status: 'completed',
     created_at: new Date().toISOString(),
@@ -130,7 +116,6 @@ app.post('/api/add-funds', (req, res) => {
   res.json({ new_balance: user.balance });
 });
 
-// ---------- SEND ----------
 app.post('/api/send', (req, res) => {
   const auth = req.headers.authorization;
   if (!auth) return res.status(401).json({ error: 'Unauthorized' });
@@ -164,13 +149,9 @@ app.post('/api/send', (req, res) => {
     reference: ref
   });
 
-  res.json({
-    reference: ref,
-    new_balance: user.balance
-  });
+  res.json({ reference: ref, new_balance: user.balance });
 });
 
-// ---------- GET /transactions ----------
 app.get('/api/transactions', (req, res) => {
   const auth = req.headers.authorization;
   if (!auth) return res.status(401).json({ error: 'Unauthorized' });
@@ -180,15 +161,9 @@ app.get('/api/transactions', (req, res) => {
   if (!userId) return res.status(401).json({ error: 'Invalid token' });
 
   const userTxs = transactions.filter(t => t.user_id === userId);
-  // Sort by most recent first
   userTxs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   res.json(userTxs);
 });
 
-// Serve static files (optional) – if you put your HTML in the same folder
-app.use(express.static(__dirname));
-
-app.listen(PORT, () => {
-  console.log(`Backend running at http://localhost:${PORT}`);
-  console.log(`Open your HTML file (or visit http://localhost:${PORT} if you serve it from here)`);
-});
+// ---------- Export for Vercel ----------
+module.exports = app;
