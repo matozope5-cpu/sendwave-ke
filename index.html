@@ -1130,20 +1130,21 @@
         }
 
         // ================================================================
-        //  BOOT – Persistent Session with Instant Cache Restoration
+        //  BOOT – Splash screen with persistent session
         // ================================================================
         (function boot() {
-            // 1) If we have a token and name, restore the session immediately from cache
-            if (token && userName) {
-                setUser(userName, token);
+            // Restore cached data immediately (so it's ready when splash ends)
+            var hasCachedToken = !!localStorage.getItem('sw_token');
+            var hasCachedName = !!localStorage.getItem('sw_name');
 
-                // Restore balance from localStorage (if available)
+            if (hasCachedToken && hasCachedName) {
+                var cachedToken = localStorage.getItem('sw_token');
+                var cachedName = localStorage.getItem('sw_name');
+                setUser(cachedName, cachedToken);
+
                 var cachedBalance = localStorage.getItem('sw_balance');
-                if (cachedBalance) {
-                    updBal(parseFloat(cachedBalance));
-                }
+                if (cachedBalance) updBal(parseFloat(cachedBalance));
 
-                // Restore transactions from localStorage (if available)
                 var cachedTx = localStorage.getItem('sw_tx_cache');
                 if (cachedTx) {
                     try {
@@ -1152,31 +1153,28 @@
                         renderAct();
                     } catch (_) { /* ignore */ }
                 }
+            }
 
-                // Navigate to home immediately (no waiting for API)
-                go('p-home');
-
-                // Then refresh from API in the background
-                loadMe().then(function(ok) {
-                    if (!ok) {
-                        // If API fails but we have cached data, we stay logged in
-                        var hasCachedBalance = localStorage.getItem('sw_balance') !== null;
-                        var hasCachedTx = localStorage.getItem('sw_tx_cache') !== null;
-                        if (!hasCachedBalance && !hasCachedTx) {
-                            // No cached data at all – log out
+            // Wait 1.4 seconds (original feel) then navigate and refresh
+            setTimeout(function() {
+                if (hasCachedToken && hasCachedName) {
+                    go('p-home');
+                    // Refresh from API in the background (don't block UI)
+                    loadMe().catch(function() {
+                        // If API fails but we have cached data, stay logged in
+                        // Otherwise, if no cached data at all, log out
+                        var hasBalance = localStorage.getItem('sw_balance') !== null;
+                        var hasTx = localStorage.getItem('sw_tx_cache') !== null;
+                        if (!hasBalance && !hasTx) {
                             logout();
                             go('p-land');
                             toast('Session expired. Please log in again.', 'error');
                         }
-                    }
-                }).catch(function() {
-                    // Silently keep using cached data
-                });
-
-            } else {
-                // No token – show landing page
-                go('p-land');
-            }
+                    });
+                } else {
+                    go('p-land');
+                }
+            }, 1400);
         })();
     </script>
 
