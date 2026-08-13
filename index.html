@@ -324,13 +324,6 @@
             text-align: center;
             min-height: 18px;
         }
-        .msg-ok {
-            color: #2e7d32;
-            font-size: 13px;
-            margin-top: 8px;
-            text-align: center;
-            min-height: 18px;
-        }
     </style>
 </head>
 <body>
@@ -714,7 +707,7 @@
             } catch (_) { return ''; }
         }
 
-        // No toasts — all feedback now uses inline UI elements.
+        // No toasts — all feedback uses inline UI elements.
 
         // ================================================================
         //  USER & UI
@@ -983,7 +976,7 @@
         }
 
         // ================================================================
-        //  SEND — pure frontend simulation with longer, natural delay
+        //  SEND — real API call with natural multi‑step progress
         // ================================================================
         function pS() {
             var v = parseFloat(document.getElementById('sam').value) || 0;
@@ -1018,12 +1011,11 @@
                 sb.textContent = 'Continue →'; }
         }
 
-        // Natural delay messages with varied timing
-        var SEND_STEPS = [
-            { msg: 'Connecting to Safaricom gateway...', delay: 1200 },
-            { msg: 'Verifying recipient M-Pesa account...', delay: 1400 },
-            { msg: 'Processing transfer through secure channel...', delay: 1600 },
-            { msg: 'Almost done — confirming with network...', delay: 1200 },
+        var SEND_MESSAGES = [
+            'Connecting to Safaricom gateway...',
+            'Verifying recipient M-Pesa account...',
+            'Processing transfer through secure channel...',
+            'Almost done — confirming with network...'
         ];
 
         function sGo() {
@@ -1037,7 +1029,6 @@
             if (isNaN(amt) || amt <= 0) { err.textContent = 'Enter a valid amount'; return; }
             if (amt > bal) { err.textContent = 'Insufficient balance. Add funds first.'; return; }
 
-            // Disable button during send
             var btn = document.getElementById('send-btn');
             btn.disabled = true;
             btn.textContent = 'Sending...';
@@ -1047,73 +1038,54 @@
             if (lb) lb.textContent = nm + ' · ' + mask(ph);
 
             var msgEl = document.getElementById('smg');
-            var stepIndex = 0;
-            var totalDelay = 0;
-
-            function runNextStep() {
-                if (stepIndex < SEND_STEPS.length) {
-                    var s = SEND_STEPS[stepIndex];
-                    if (msgEl) msgEl.textContent = s.msg;
-                    stepIndex++;
-                    totalDelay += s.delay;
-                    setTimeout(runNextStep, s.delay);
+            var msgIndex = 0;
+            var interval = setInterval(function() {
+                if (msgIndex < SEND_MESSAGES.length) {
+                    msgEl.textContent = SEND_MESSAGES[msgIndex];
+                    msgIndex++;
                 } else {
-                    // All steps done — show success
-                    finishSend(nm, ph, amt);
+                    // Keep the last message
+                    clearInterval(interval);
                 }
-            }
+            }, 1400);
 
-            // Start the sequence
-            runNextStep();
-        }
-
-        function finishSend(nm, ph, amt) {
-            // Generate a realistic-looking reference
-            var ref = 'MP' + String(Math.floor(100000 + Math.random() * 900000)) + 'SW' + String(Date.now()).slice(-4);
-            var kes = Math.round(amt * 129.5);
-
-            // Update balance
-            bal = parseFloat((bal - amt).toFixed(2));
-            var hb = document.getElementById('hbal');
-            if (hb) hb.textContent = '$' + bal.toFixed(2);
-            localStorage.setItem('sw_balance', String(bal));
-
-            // Add transaction
-            allTx.unshift({
-                type: 'sent',
-                recipient_name: nm,
-                recipient_phone: ph,
-                amount_usd: amt,
-                amount_kes: kes,
-                reference: ref,
-                status: 'completed',
-                created_at: new Date().toISOString()
-            });
-            localStorage.setItem('sw_tx_cache', JSON.stringify(allTx));
-            renderHome();
-
-            // Show success UI
-            var ok1 = document.getElementById('ok1');
-            if (ok1) ok1.textContent = '$' + amt.toFixed(2) + ' sent to ' + nm;
-            var ok2 = document.getElementById('ok2');
-            if (ok2) ok2.textContent = kes.toLocaleString() + ' KES delivered via M-Pesa';
-            var okrf = document.getElementById('okrf');
-            if (okrf) okrf.textContent = ref;
-            var oktm = document.getElementById('oktm');
-            if (oktm) oktm.textContent = new Date().toLocaleTimeString();
-
-            step(false, false, true);
-
-            // Re-enable button (will be reset when sheet closes)
-            var btn = document.getElementById('send-btn');
-            btn.disabled = false;
-            btn.textContent = 'Continue →';
+            // Make the actual API call
+            api('POST', '/send', { recipient_name: nm, recipient_phone: ph, amount_usd: amt })
+                .then(function(data) {
+                    clearInterval(interval);
+                    // Update balance from server response
+                    var newBal = data.new_balance !== undefined ? data.new_balance : bal - amt;
+                    updBal(newBal);
+                    localStorage.setItem('sw_balance', String(newBal));
+                    // Refresh transaction list
+                    return loadTx();
+                })
+                .then(function() {
+                    // Show success screen
+                    var ok1 = document.getElementById('ok1');
+                    if (ok1) ok1.textContent = '$' + amt.toFixed(2) + ' sent to ' + nm;
+                    var ok2 = document.getElementById('ok2');
+                    if (ok2) ok2.textContent = Math.round(amt * 129.5).toLocaleString() + ' KES delivered via M-Pesa';
+                    var okrf = document.getElementById('okrf');
+                    if (okrf) okrf.textContent = (allTx.length && allTx[0].reference) ? allTx[0].reference :
+                        'MP' + String(Math.floor(100000 + Math.random() * 900000)) + 'SW';
+                    var oktm = document.getElementById('oktm');
+                    if (oktm) oktm.textContent = new Date().toLocaleTimeString();
+                    step(false, false, true);
+                })
+                .catch(function(e) {
+                    clearInterval(interval);
+                    // Revert to step 1 and show error
+                    step(true, false, false);
+                    err.textContent = e.message;
+                    btn.disabled = false;
+                    btn.textContent = 'Continue →';
+                });
         }
 
         function sDone() {
             cSh('sh-send');
             rSend();
-            loadTx();
             go('p-home');
         }
 
