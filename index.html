@@ -324,33 +324,12 @@
             text-align: center;
             min-height: 18px;
         }
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            background: #323232;
-            color: #fff;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 500;
-            z-index: 999;
-            opacity: 0;
-            transition: opacity .3s ease, transform .3s ease;
-            pointer-events: none;
-            max-width: 90%;
+        .msg-ok {
+            color: #2e7d32;
+            font-size: 13px;
+            margin-top: 8px;
             text-align: center;
-        }
-        .toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-        .toast.error {
-            background: #c62828;
-        }
-        .toast.success {
-            background: #2e7d32;
+            min-height: 18px;
         }
     </style>
 </head>
@@ -672,9 +651,6 @@
             </div>
         </div>
 
-        <!-- Toast -->
-        <div class="toast" id="toast"></div>
-
     </div>
 
     <script>
@@ -738,14 +714,7 @@
             } catch (_) { return ''; }
         }
 
-        function toast(msg, type) {
-            var el = document.getElementById('toast');
-            if (!el) return;
-            el.textContent = msg;
-            el.className = 'toast show' + (type ? ' ' + type : '');
-            clearTimeout(el._t);
-            el._t = setTimeout(function() { el.classList.remove('show'); }, 3500);
-        }
+        // No toasts — all feedback now uses inline UI elements.
 
         // ================================================================
         //  USER & UI
@@ -812,7 +781,6 @@
             localStorage.removeItem('sw_balance');
             localStorage.removeItem('sw_tx_cache');
             go('p-land');
-            toast('Logged out', '');
         }
 
         // ================================================================
@@ -917,7 +885,6 @@
                         renderAct();
                     } catch (_) {}
                 }
-                // If we have cached data, we're still "logged in" from the user's perspective
                 if (cached || cachedTx) return true;
                 return false;
             }
@@ -933,6 +900,7 @@
             var pw = (document.getElementById('su-pw').value || '').trim();
             var cc = document.getElementById('su-cc').value;
             var err = document.getElementById('su-err');
+            err.textContent = '';
             if (!fn || !ln) { err.textContent = 'Please enter your full name'; return; }
             if (!ph) { err.textContent = 'Please enter your phone number'; return; }
             if (pw.length < 6) { err.textContent = 'Password must be at least 6 characters'; return; }
@@ -940,7 +908,6 @@
             var btn = document.getElementById('su-btn');
             btn.disabled = true;
             btn.textContent = 'Creating account...';
-            err.textContent = '';
             try {
                 var data = await api('POST', '/signup', { first_name: fn, last_name: ln, phone: fullPhone, password: pw });
                 setUser(data.name, data.token);
@@ -950,10 +917,8 @@
                 renderHome();
                 localStorage.removeItem('sw_tx_cache');
                 go('p-home');
-                toast('Account created! Welcome to Sendwave.', 'success');
             } catch (e) {
                 err.textContent = e.message;
-                toast(e.message, 'error');
                 btn.disabled = false;
                 btn.textContent = 'Create Account';
             }
@@ -966,11 +931,11 @@
             var ph = (document.getElementById('li-ph').value || '').trim();
             var pw = (document.getElementById('li-pw').value || '').trim();
             var err = document.getElementById('li-err');
+            err.textContent = '';
             if (!ph || !pw) { err.textContent = 'Please fill in all fields'; return; }
             var btn = document.getElementById('li-btn');
             btn.disabled = true;
             btn.textContent = 'Logging in...';
-            err.textContent = '';
             try {
                 var data = await api('POST', '/login', { phone: ph, password: pw });
                 setUser(data.name, data.token);
@@ -978,10 +943,8 @@
                 localStorage.setItem('sw_balance', String(data.balance));
                 await loadTx();
                 go('p-home');
-                toast('Welcome back, ' + data.name + '!', 'success');
             } catch (e) {
                 err.textContent = e.message;
-                toast(e.message, 'error');
                 btn.disabled = false;
                 btn.textContent = 'Log in';
             }
@@ -998,11 +961,11 @@
         async function doAdd() {
             var usd = parseFloat(document.getElementById('add-usd').value);
             var err = document.getElementById('add-err');
+            err.textContent = '';
             if (isNaN(usd) || usd <= 0) { err.textContent = 'Enter a valid amount'; return; }
             var btn = document.getElementById('add-btn');
             btn.disabled = true;
             btn.textContent = 'Adding...';
-            err.textContent = '';
             try {
                 var data = await api('POST', '/add-funds', { amount_usd: usd });
                 updBal(data.new_balance);
@@ -1011,10 +974,8 @@
                 cSh('sh-add');
                 document.getElementById('add-usd').value = '';
                 document.getElementById('add-kes-prv').textContent = '0 KES';
-                toast('$' + usd.toFixed(2) + ' added successfully!', 'success');
             } catch (e) {
                 err.textContent = e.message;
-                toast(e.message, 'error');
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Add Funds Instantly';
@@ -1022,7 +983,7 @@
         }
 
         // ================================================================
-        //  SEND
+        //  SEND — pure frontend simulation with longer, natural delay
         // ================================================================
         function pS() {
             var v = parseFloat(document.getElementById('sam').value) || 0;
@@ -1057,7 +1018,15 @@
                 sb.textContent = 'Continue →'; }
         }
 
-        async function sGo() {
+        // Natural delay messages with varied timing
+        var SEND_STEPS = [
+            { msg: 'Connecting to Safaricom gateway...', delay: 1200 },
+            { msg: 'Verifying recipient M-Pesa account...', delay: 1400 },
+            { msg: 'Processing transfer through secure channel...', delay: 1600 },
+            { msg: 'Almost done — confirming with network...', delay: 1200 },
+        ];
+
+        function sGo() {
             var ph = (document.getElementById('sph').value || '').trim();
             var nm = (document.getElementById('snm').value || '').trim();
             var amt = parseFloat(document.getElementById('sam').value);
@@ -1068,58 +1037,77 @@
             if (isNaN(amt) || amt <= 0) { err.textContent = 'Enter a valid amount'; return; }
             if (amt > bal) { err.textContent = 'Insufficient balance. Add funds first.'; return; }
 
+            // Disable button during send
+            var btn = document.getElementById('send-btn');
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+
             step(false, true, false);
             var lb = document.getElementById('slb');
             if (lb) lb.textContent = nm + ' · ' + mask(ph);
-            var msgs = ['Connecting to Safaricom...', 'Verifying recipient...', 'Processing transfer...',
-                'Almost done...'
-            ];
-            var mi = 0;
-            var iv = setInterval(function() {
-                mi++;
-                if (mi < msgs.length) { var mg = document.getElementById('smg'); if (mg) mg.textContent = msgs[mi]; }
-            }, 600);
 
-            try {
-                var data = await api('POST', '/send', { recipient_name: nm, recipient_phone: ph, amount_usd: amt });
-                clearInterval(iv);
+            var msgEl = document.getElementById('smg');
+            var stepIndex = 0;
+            var totalDelay = 0;
 
-                bal = parseFloat((bal - amt).toFixed(2));
-                var hb = document.getElementById('hbal');
-                if (hb) hb.textContent = '$' + bal.toFixed(2);
-                localStorage.setItem('sw_balance', String(bal));
-
-                allTx.unshift({
-                    type: 'sent',
-                    recipient_name: nm,
-                    recipient_phone: ph,
-                    amount_usd: amt,
-                    amount_kes: Math.round(amt * 129.5),
-                    reference: data.reference,
-                    status: 'completed',
-                    created_at: new Date().toISOString()
-                });
-                localStorage.setItem('sw_tx_cache', JSON.stringify(allTx));
-                renderHome();
-
-                var ok1 = document.getElementById('ok1');
-                if (ok1) ok1.textContent = '$' + amt.toFixed(2) + ' sent to ' + nm;
-                var ok2 = document.getElementById('ok2');
-                if (ok2) ok2.textContent = Math.round(amt * 129.5).toLocaleString() + ' KES delivered via M-Pesa';
-                var okrf = document.getElementById('okrf');
-                if (okrf) okrf.textContent = data.reference;
-                var oktm = document.getElementById('oktm');
-                if (oktm) oktm.textContent = new Date().toLocaleTimeString();
-
-                step(false, false, true);
-                toast('Transfer successful!', 'success');
-
-            } catch (e) {
-                clearInterval(iv);
-                step(true, false, false);
-                if (document.getElementById('send-err')) document.getElementById('send-err').textContent = e.message;
-                toast(e.message, 'error');
+            function runNextStep() {
+                if (stepIndex < SEND_STEPS.length) {
+                    var s = SEND_STEPS[stepIndex];
+                    if (msgEl) msgEl.textContent = s.msg;
+                    stepIndex++;
+                    totalDelay += s.delay;
+                    setTimeout(runNextStep, s.delay);
+                } else {
+                    // All steps done — show success
+                    finishSend(nm, ph, amt);
+                }
             }
+
+            // Start the sequence
+            runNextStep();
+        }
+
+        function finishSend(nm, ph, amt) {
+            // Generate a realistic-looking reference
+            var ref = 'MP' + String(Math.floor(100000 + Math.random() * 900000)) + 'SW' + String(Date.now()).slice(-4);
+            var kes = Math.round(amt * 129.5);
+
+            // Update balance
+            bal = parseFloat((bal - amt).toFixed(2));
+            var hb = document.getElementById('hbal');
+            if (hb) hb.textContent = '$' + bal.toFixed(2);
+            localStorage.setItem('sw_balance', String(bal));
+
+            // Add transaction
+            allTx.unshift({
+                type: 'sent',
+                recipient_name: nm,
+                recipient_phone: ph,
+                amount_usd: amt,
+                amount_kes: kes,
+                reference: ref,
+                status: 'completed',
+                created_at: new Date().toISOString()
+            });
+            localStorage.setItem('sw_tx_cache', JSON.stringify(allTx));
+            renderHome();
+
+            // Show success UI
+            var ok1 = document.getElementById('ok1');
+            if (ok1) ok1.textContent = '$' + amt.toFixed(2) + ' sent to ' + nm;
+            var ok2 = document.getElementById('ok2');
+            if (ok2) ok2.textContent = kes.toLocaleString() + ' KES delivered via M-Pesa';
+            var okrf = document.getElementById('okrf');
+            if (okrf) okrf.textContent = ref;
+            var oktm = document.getElementById('oktm');
+            if (oktm) oktm.textContent = new Date().toLocaleTimeString();
+
+            step(false, false, true);
+
+            // Re-enable button (will be reset when sheet closes)
+            var btn = document.getElementById('send-btn');
+            btn.disabled = false;
+            btn.textContent = 'Continue →';
         }
 
         function sDone() {
@@ -1133,7 +1121,6 @@
         //  BOOT – Splash screen with persistent session
         // ================================================================
         (function boot() {
-            // Restore cached data immediately (so it's ready when splash ends)
             var hasCachedToken = !!localStorage.getItem('sw_token');
             var hasCachedName = !!localStorage.getItem('sw_name');
 
@@ -1155,20 +1142,15 @@
                 }
             }
 
-            // Wait 1.4 seconds (original feel) then navigate and refresh
             setTimeout(function() {
                 if (hasCachedToken && hasCachedName) {
                     go('p-home');
-                    // Refresh from API in the background (don't block UI)
                     loadMe().catch(function() {
-                        // If API fails but we have cached data, stay logged in
-                        // Otherwise, if no cached data at all, log out
                         var hasBalance = localStorage.getItem('sw_balance') !== null;
                         var hasTx = localStorage.getItem('sw_tx_cache') !== null;
                         if (!hasBalance && !hasTx) {
                             logout();
                             go('p-land');
-                            toast('Session expired. Please log in again.', 'error');
                         }
                     });
                 } else {
