@@ -324,34 +324,6 @@
             text-align: center;
             min-height: 18px;
         }
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #323232;
-            color: #fff;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 500;
-            z-index: 999;
-            opacity: 0;
-            transition: opacity .3s ease, transform .3s ease;
-            pointer-events: none;
-            max-width: 90%;
-            text-align: center;
-        }
-        .toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-        .toast.error {
-            background: #c62828;
-        }
-        .toast.success {
-            background: #2e7d32;
-        }
     </style>
 </head>
 <body>
@@ -672,9 +644,6 @@
             </div>
         </div>
 
-        <!-- Toast -->
-        <div class="toast" id="toast"></div>
-
     </div>
 
     <script>
@@ -742,12 +711,7 @@
         }
 
         function toast(msg, type) {
-            var el = document.getElementById('toast');
-            if (!el) return;
-            el.textContent = msg;
-            el.className = 'toast show' + (type ? ' ' + type : '');
-            clearTimeout(el._t);
-            el._t = setTimeout(function() { el.classList.remove('show'); }, 3500);
+            // Toasts disabled.
         }
 
         // ================================================================
