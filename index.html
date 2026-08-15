@@ -324,6 +324,17 @@
             text-align: center;
             min-height: 18px;
         }
+        /* prevent interactions during transaction */
+        .block-ui {
+            position: fixed;
+            inset: 0;
+            z-index: 999;
+            background: rgba(255,255,255,0.01);
+            pointer-events: none;
+        }
+        .block-ui.active {
+            pointer-events: all;
+        }
     </style>
 </head>
 <body>
@@ -648,12 +659,74 @@
 
     <script>
         // ================================================================
-        //  CONFIG
+        //  CLIENT-STATE "BACKEND" (localStorage)
         // ================================================================
-        const API_BASE = '/api';
+
+        // ---------- Helpers ----------
+        function genRef() {
+            return 'TX' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substring(2, 6).toUpperCase();
+        }
+
+        function nowISO() {
+            return new Date().toISOString();
+        }
+
+        function getUsers() {
+            try { return JSON.parse(localStorage.getItem('sw_users')) || []; } catch (_) { return []; }
+        }
+
+        function setUsers(u) {
+            localStorage.setItem('sw_users', JSON.stringify(u));
+        }
+
+        function getTx() {
+            try { return JSON.parse(localStorage.getItem('sw_tx')) || []; } catch (_) { return []; }
+        }
+
+        function setTx(t) {
+            localStorage.setItem('sw_tx', JSON.stringify(t));
+        }
+
+        function getNextUserId() {
+            var n = parseInt(localStorage.getItem('sw_nextUserId')) || 1;
+            return n;
+        }
+
+        function setNextUserId(n) {
+            localStorage.setItem('sw_nextUserId', String(n));
+        }
+
+        function getNextTxId() {
+            var n = parseInt(localStorage.getItem('sw_nextTxId')) || 1;
+            return n;
+        }
+
+        function setNextTxId(n) {
+            localStorage.setItem('sw_nextTxId', String(n));
+        }
+
+        function findUserByPhone(phone) {
+            var users = getUsers();
+            return users.find(function(u) { return u.phone === phone; });
+        }
+
+        function findUserById(id) {
+            var users = getUsers();
+            return users.find(function(u) { return u.id === id; });
+        }
+
+        function getCurrentUserId() {
+            var id = localStorage.getItem('sw_currentUserId');
+            return id ? parseInt(id) : null;
+        }
+
+        function setCurrentUserId(id) {
+            if (id) localStorage.setItem('sw_currentUserId', String(id));
+            else localStorage.removeItem('sw_currentUserId');
+        }
 
         // ================================================================
-        //  STATE
+        //  FRONTEND STATE
         // ================================================================
         var token = localStorage.getItem('sw_token') || '';
         var userName = localStorage.getItem('sw_name') || '';
@@ -662,28 +735,7 @@
             allTx = [],
             txf = 'all',
             cur = 'p-splash';
-
-        // ================================================================
-        //  API HELPER
-        // ================================================================
-        async function api(method, path, body) {
-            const opts = {
-                method,
-                headers: { 'Content-Type': 'application/json' }
-            };
-            if (token) opts.headers['Authorization'] = 'Bearer ' + token;
-            if (body) opts.body = JSON.stringify(body);
-
-            const r = await fetch(API_BASE + path, opts);
-            let d;
-            try {
-                d = await r.json();
-            } catch (_) {
-                throw new Error('Server returned invalid JSON. Make sure the backend is running.');
-            }
-            if (!r.ok) throw new Error(d.error || 'Request failed');
-            return d;
-        }
+        var isProcessing = false; // for transaction lock
 
         // ================================================================
         //  HELPERS
@@ -710,26 +762,31 @@
         // ================================================================
         //  USER & UI
         // ================================================================
-        function setUser(name, t) {
-            token = t;
+        function setUser(name, id) {
             userName = name;
-            localStorage.setItem('sw_token', t);
+            token = 'fake-jwt-' + id + '-' + Date.now();
+            localStorage.setItem('sw_token', token);
             localStorage.setItem('sw_name', name);
+            setCurrentUserId(id);
             var av = inits(name);
-            ['hav', 'pav', 'dav'].forEach(function(id) {
-                var e = document.getElementById(id);
+            ['hav', 'pav', 'dav'].forEach(function(elId) {
+                var e = document.getElementById(elId);
                 if (e) e.textContent = av;
             });
-            ['pnm', 'dnm'].forEach(function(id) {
-                var e = document.getElementById(id);
+            ['pnm', 'dnm'].forEach(function(elId) {
+                var e = document.getElementById(elId);
                 if (e) e.textContent = name;
             });
+            var user = findUserById(id);
+            var pph = document.getElementById('pph');
+            if (pph && user) pph.textContent = user.phone || 'sendwave.xyz';
         }
 
         function updBal(b) {
             bal = parseFloat(b) || 0;
             var el = document.getElementById('hbal');
             if (el) el.textContent = bv ? '$' + bal.toFixed(2) : '$ ••••';
+            localStorage.setItem('sw_balance', String(bal));
         }
 
         function tBal() { bv = !bv;
@@ -739,6 +796,7 @@
         //  NAVIGATION
         // ================================================================
         function go(id) {
+            if (isProcessing) return;
             var c = document.getElementById(cur);
             var n = document.getElementById(id);
             if (!n) return;
@@ -750,23 +808,25 @@
             if (id === 'p-act') loadTx();
         }
 
-        function oSh(id) { var e = document.getElementById(id); if (e) e.classList.add('on'); }
+        function oSh(id) { if (!isProcessing) { var e = document.getElementById(id); if (e) e.classList.add('on'); } }
 
         function cSh(id) { var e = document.getElementById(id); if (e) e.classList.remove('on'); }
 
-        function bgC(e, id) { if (e.target.classList.contains('ov')) cSh(id); }
+        function bgC(e, id) { if (e.target.classList.contains('ov') && !isProcessing) cSh(id); }
 
-        function openD() { document.getElementById('drw').classList.add('on');
-            document.getElementById('dov').classList.add('on'); }
+        function openD() { if (!isProcessing) { document.getElementById('drw').classList.add('on');
+                document.getElementById('dov').classList.add('on'); } }
 
         function closeD() { document.getElementById('drw').classList.remove('on');
             document.getElementById('dov').classList.remove('on'); }
 
         function logout() {
+            if (isProcessing) return;
             token = '';
             userName = '';
             bal = 0;
             allTx = [];
+            setCurrentUserId(null);
             localStorage.removeItem('sw_token');
             localStorage.removeItem('sw_name');
             localStorage.removeItem('sw_balance');
@@ -835,11 +895,161 @@
         }
 
         // ================================================================
-        //  API CALLS
+        //  "API"  (synchronous localStorage, but called after delay)
         // ================================================================
-        async function loadTx() {
+
+        function apiSignup(first_name, last_name, phone, password) {
+            var users = getUsers();
+            if (findUserByPhone(phone)) {
+                throw new Error('Phone number already registered');
+            }
+            if (password.length < 6) {
+                throw new Error('Password must be at least 6 characters');
+            }
+            var id = getNextUserId();
+            setNextUserId(id + 1);
+            var newUser = {
+                id: id,
+                first_name: first_name,
+                last_name: last_name,
+                phone: phone,
+                password: password,
+                balance: 0,
+                created_at: nowISO()
+            };
+            users.push(newUser);
+            setUsers(users);
+            var name = first_name + ' ' + last_name;
+            setUser(name, id);
+            updBal(0);
+            allTx = [];
+            renderHome();
+            localStorage.removeItem('sw_tx_cache');
+            return { name: name, balance: 0 };
+        }
+
+        function apiLogin(phone, password) {
+            var user = findUserByPhone(phone);
+            if (!user || user.password !== password) {
+                throw new Error('Invalid credentials');
+            }
+            var name = user.first_name + ' ' + user.last_name;
+            setUser(name, user.id);
+            updBal(user.balance);
+            var all = getTx();
+            allTx = all.filter(function(t) { return t.user_id === user.id; });
+            allTx.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
+            renderHome();
+            localStorage.setItem('sw_tx_cache', JSON.stringify(allTx));
+            return { name: name, balance: user.balance };
+        }
+
+        function apiAddFunds(amount_usd) {
+            var userId = getCurrentUserId();
+            if (!userId) throw new Error('Unauthorized');
+            var users = getUsers();
+            var user = users.find(function(u) { return u.id === userId; });
+            if (!user) throw new Error('User not found');
+            if (!amount_usd || amount_usd <= 0) throw new Error('Amount must be positive');
+
+            user.balance += amount_usd;
+            setUsers(users);
+            updBal(user.balance);
+
+            var tx = getTx();
+            var txId = getNextTxId();
+            setNextTxId(txId + 1);
+            var record = {
+                id: txId,
+                user_id: user.id,
+                type: 'added',
+                amount_usd: amount_usd,
+                amount_kes: Math.round(amount_usd * 129.5),
+                status: 'completed',
+                created_at: nowISO(),
+                reference: genRef()
+            };
+            tx.push(record);
+            setTx(tx);
+            allTx = tx.filter(function(t) { return t.user_id === userId; });
+            allTx.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
+            renderHome();
+            localStorage.setItem('sw_tx_cache', JSON.stringify(allTx));
+            return { new_balance: user.balance };
+        }
+
+        function apiSend(recipient_name, recipient_phone, amount_usd) {
+            var userId = getCurrentUserId();
+            if (!userId) throw new Error('Unauthorized');
+            var users = getUsers();
+            var user = users.find(function(u) { return u.id === userId; });
+            if (!user) throw new Error('User not found');
+            if (!recipient_name || !recipient_phone || !amount_usd || amount_usd <= 0) {
+                throw new Error('Missing or invalid fields');
+            }
+            if (amount_usd > user.balance) {
+                throw new Error('Insufficient balance');
+            }
+            user.balance -= amount_usd;
+            setUsers(users);
+            updBal(user.balance);
+
+            var tx = getTx();
+            var txId = getNextTxId();
+            setNextTxId(txId + 1);
+            var ref = genRef();
+            var record = {
+                id: txId,
+                user_id: user.id,
+                type: 'sent',
+                recipient_name: recipient_name,
+                recipient_phone: recipient_phone,
+                amount_usd: amount_usd,
+                amount_kes: Math.round(amount_usd * 129.5),
+                status: 'completed',
+                created_at: nowISO(),
+                reference: ref
+            };
+            tx.push(record);
+            setTx(tx);
+            allTx = tx.filter(function(t) { return t.user_id === userId; });
+            allTx.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
+            renderHome();
+            localStorage.setItem('sw_tx_cache', JSON.stringify(allTx));
+            return { reference: ref, new_balance: user.balance };
+        }
+
+        function apiGetTransactions() {
+            var userId = getCurrentUserId();
+            if (!userId) throw new Error('Unauthorized');
+            var tx = getTx();
+            var userTxs = tx.filter(function(t) { return t.user_id === userId; });
+            userTxs.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
+            return userTxs;
+        }
+
+        function apiGetMe() {
+            var userId = getCurrentUserId();
+            if (!userId) throw new Error('Unauthorized');
+            var users = getUsers();
+            var user = users.find(function(u) { return u.id === userId; });
+            if (!user) throw new Error('User not found');
+            return {
+                id: user.id,
+                name: user.first_name + ' ' + user.last_name,
+                phone: user.phone,
+                balance: user.balance,
+                created_at: user.created_at
+            };
+        }
+
+        // ================================================================
+        //  LOADERS
+        // ================================================================
+
+        function loadTx() {
             try {
-                var data = await api('GET', '/transactions');
+                var data = apiGetTransactions();
                 allTx = data || [];
                 renderHome();
                 renderAct();
@@ -857,12 +1067,12 @@
             }
         }
 
-        async function loadMe() {
+        function loadMe() {
             try {
-                var data = await api('GET', '/me');
+                var data = apiGetMe();
                 updBal(data.balance);
                 localStorage.setItem('sw_balance', String(data.balance));
-                await loadTx();
+                loadTx();
                 return true;
             } catch (e) {
                 console.error('loadMe:', e.message);
@@ -876,16 +1086,16 @@
                         renderAct();
                     } catch (_) {}
                 }
-                // If we have cached data, we're still "logged in" from the user's perspective
                 if (cached || cachedTx) return true;
                 return false;
             }
         }
 
         // ================================================================
-        //  SIGNUP
+        //  SIGNUP / LOGIN (with simulated delay)
         // ================================================================
-        async function doSignup() {
+
+        function doSignup() {
             var fn = (document.getElementById('su-fn').value || '').trim();
             var ln = (document.getElementById('su-ln').value || '').trim();
             var ph = (document.getElementById('su-ph').value || '').trim();
@@ -900,26 +1110,21 @@
             btn.disabled = true;
             btn.textContent = 'Creating account...';
             err.textContent = '';
-            try {
-                var data = await api('POST', '/signup', { first_name: fn, last_name: ln, phone: fullPhone, password: pw });
-                setUser(data.name, data.token);
-                updBal(data.balance);
-                localStorage.setItem('sw_balance', String(data.balance));
-                allTx = [];
-                renderHome();
-                localStorage.removeItem('sw_tx_cache');
-                go('p-home');
-            } catch (e) {
-                err.textContent = e.message;
-                btn.disabled = false;
-                btn.textContent = 'Create Account';
-            }
+            // simulate network delay
+            setTimeout(function() {
+                try {
+                    var data = apiSignup(fn, ln, fullPhone, pw);
+                    go('p-home');
+                } catch (e) {
+                    err.textContent = e.message;
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Create Account';
+                }
+            }, 800);
         }
 
-        // ================================================================
-        //  LOGIN
-        // ================================================================
-        async function doLogin() {
+        function doLogin() {
             var ph = (document.getElementById('li-ph').value || '').trim();
             var pw = (document.getElementById('li-pw').value || '').trim();
             var err = document.getElementById('li-err');
@@ -928,29 +1133,29 @@
             btn.disabled = true;
             btn.textContent = 'Logging in...';
             err.textContent = '';
-            try {
-                var data = await api('POST', '/login', { phone: ph, password: pw });
-                setUser(data.name, data.token);
-                updBal(data.balance);
-                localStorage.setItem('sw_balance', String(data.balance));
-                await loadTx();
-                go('p-home');
-            } catch (e) {
-                err.textContent = e.message;
-                btn.disabled = false;
-                btn.textContent = 'Log in';
-            }
+            setTimeout(function() {
+                try {
+                    var data = apiLogin(ph, pw);
+                    go('p-home');
+                } catch (e) {
+                    err.textContent = e.message;
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Log in';
+                }
+            }, 800);
         }
 
         // ================================================================
-        //  ADD FUNDS
+        //  ADD FUNDS (with simulated delay)
         // ================================================================
+
         function prvA() {
             var v = parseFloat(document.getElementById('add-usd').value) || 0;
             document.getElementById('add-kes-prv').textContent = Math.round(v * 129.5).toLocaleString() + ' KES';
         }
 
-        async function doAdd() {
+        function doAdd() {
             var usd = parseFloat(document.getElementById('add-usd').value);
             var err = document.getElementById('add-err');
             if (isNaN(usd) || usd <= 0) { err.textContent = 'Enter a valid amount'; return; }
@@ -958,25 +1163,29 @@
             btn.disabled = true;
             btn.textContent = 'Adding...';
             err.textContent = '';
-            try {
-                var data = await api('POST', '/add-funds', { amount_usd: usd });
-                updBal(data.new_balance);
-                localStorage.setItem('sw_balance', String(data.new_balance));
-                await loadTx();
-                cSh('sh-add');
-                document.getElementById('add-usd').value = '';
-                document.getElementById('add-kes-prv').textContent = '0 KES';
-            } catch (e) {
-                err.textContent = e.message;
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Add Funds Instantly';
-            }
+            setTimeout(function() {
+                try {
+                    var data = apiAddFunds(usd);
+                    cSh('sh-add');
+                    document.getElementById('add-usd').value = '';
+                    document.getElementById('add-kes-prv').textContent = '0 KES';
+                    loadTx();
+                } catch (e) {
+                    err.textContent = e.message;
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Add Funds Instantly';
+                }
+            }, 1200);
         }
 
         // ================================================================
-        //  SEND
+        //  SEND (with realistic simulation and safety)
         // ================================================================
+
+        var sendTimeout = null;
+        var sendAborted = false;
+
         function pS() {
             var v = parseFloat(document.getElementById('sam').value) || 0;
             document.getElementById('sks').textContent = Math.round(v * 129.5).toLocaleString() + ' KES';
@@ -999,6 +1208,11 @@
         }
 
         function rSend() {
+            if (sendTimeout) { clearTimeout(sendTimeout);
+                sendTimeout = null; }
+            sendAborted = false;
+            isProcessing = false;
+            document.querySelector('.block-ui')?.classList.remove('active');
             step(true, false, false);
             ['sph', 'snm', 'sam'].forEach(function(i) { var e = document.getElementById(i); if (e) e.value = ''; });
             var sk = document.getElementById('sks');
@@ -1010,7 +1224,17 @@
                 sb.textContent = 'Continue →'; }
         }
 
-        async function sGo() {
+        // Warn before unloading if a transaction is in progress
+        window.addEventListener('beforeunload', function(e) {
+            if (isProcessing) {
+                e.preventDefault();
+                e.returnValue = 'You have a transaction in progress. Are you sure you want to leave?';
+                return e.returnValue;
+            }
+        });
+
+        function sGo() {
+            if (isProcessing) return;
             var ph = (document.getElementById('sph').value || '').trim();
             var nm = (document.getElementById('snm').value || '').trim();
             var amt = parseFloat(document.getElementById('sam').value);
@@ -1021,57 +1245,86 @@
             if (isNaN(amt) || amt <= 0) { err.textContent = 'Enter a valid amount'; return; }
             if (amt > bal) { err.textContent = 'Insufficient balance. Add funds first.'; return; }
 
+            // Lock UI
+            isProcessing = true;
+            document.querySelector('.block-ui')?.classList.add('active');
             step(false, true, false);
             var lb = document.getElementById('slb');
             if (lb) lb.textContent = nm + ' · ' + mask(ph);
-            var msgs = ['Connecting to Safaricom...', 'Verifying recipient...', 'Processing transfer...',
-                'Almost done...'
-            ];
+            var msgs = ['Connecting to Safaricom...', 'Verifying recipient...', 'Processing transfer...', 'Almost done...'];
             var mi = 0;
-            var iv = setInterval(function() {
+            var msgInterval = setInterval(function() {
                 mi++;
                 if (mi < msgs.length) { var mg = document.getElementById('smg'); if (mg) mg.textContent = msgs[mi]; }
             }, 600);
 
-            try {
-                var data = await api('POST', '/send', { recipient_name: nm, recipient_phone: ph, amount_usd: amt });
-                clearInterval(iv);
+            // Simulate network delay (2.5 seconds)
+            sendTimeout = setTimeout(function() {
+                sendTimeout = null;
+                clearInterval(msgInterval);
+                // Actually commit the transaction now
+                try {
+                    var data = apiSend(nm, ph, amt);
+                    // Update UI for success
+                    var ok1 = document.getElementById('ok1');
+                    if (ok1) ok1.textContent = '$' + amt.toFixed(2) + ' sent to ' + nm;
+                    var ok2 = document.getElementById('ok2');
+                    if (ok2) ok2.textContent = Math.round(amt * 129.5).toLocaleString() + ' KES delivered via M-Pesa';
+                    var okrf = document.getElementById('okrf');
+                    if (okrf) okrf.textContent = data.reference;
+                    var oktm = document.getElementById('oktm');
+                    if (oktm) oktm.textContent = new Date().toLocaleTimeString();
 
-                bal = parseFloat((bal - amt).toFixed(2));
-                var hb = document.getElementById('hbal');
-                if (hb) hb.textContent = '$' + bal.toFixed(2);
-                localStorage.setItem('sw_balance', String(bal));
+                    step(false, false, true);
+                    isProcessing = false;
+                    document.querySelector('.block-ui')?.classList.remove('active');
+                } catch (e) {
+                    // Error – revert to step 1
+                    step(true, false, false);
+                    if (document.getElementById('send-err')) document.getElementById('send-err').textContent = e.message;
+                    isProcessing = false;
+                    document.querySelector('.block-ui')?.classList.remove('active');
+                }
+            }, 2500);
 
-                allTx.unshift({
-                    type: 'sent',
-                    recipient_name: nm,
-                    recipient_phone: ph,
-                    amount_usd: amt,
-                    amount_kes: Math.round(amt * 129.5),
-                    reference: data.reference,
-                    status: 'completed',
-                    created_at: new Date().toISOString()
-                });
-                localStorage.setItem('sw_tx_cache', JSON.stringify(allTx));
-                renderHome();
-
-                var ok1 = document.getElementById('ok1');
-                if (ok1) ok1.textContent = '$' + amt.toFixed(2) + ' sent to ' + nm;
-                var ok2 = document.getElementById('ok2');
-                if (ok2) ok2.textContent = Math.round(amt * 129.5).toLocaleString() + ' KES delivered via M-Pesa';
-                var okrf = document.getElementById('okrf');
-                if (okrf) okrf.textContent = data.reference;
-                var oktm = document.getElementById('oktm');
-                if (oktm) oktm.textContent = new Date().toLocaleTimeString();
-
-                step(false, false, true);
-
-            } catch (e) {
-                clearInterval(iv);
-                step(true, false, false);
-                if (document.getElementById('send-err')) document.getElementById('send-err').textContent = e.message;
-            }
+            // If the sheet is closed, abort (but we need to handle that)
+            // We'll add a close listener on the sheet overlay? We'll handle in cSh.
+            // cSh will be called if user clicks close or backdrop. We'll check if isProcessing and abort.
         }
+
+        // Override cSh to handle abort
+        var originalCSh = cSh;
+        cSh = function(id) {
+            if (id === 'sh-send' && isProcessing) {
+                // Abort transaction
+                if (sendTimeout) {
+                    clearTimeout(sendTimeout);
+                    sendTimeout = null;
+                }
+                isProcessing = false;
+                document.querySelector('.block-ui')?.classList.remove('active');
+                step(true, false, false);
+                // Also clear error
+                var se = document.getElementById('send-err');
+                if (se) se.textContent = '';
+                var sb = document.getElementById('send-btn');
+                if (sb) { sb.disabled = false;
+                    sb.textContent = 'Continue →'; }
+                // Do not close the sheet, just reset
+                return;
+            }
+            originalCSh(id);
+        };
+
+        // Override rSend to reset processing flag
+        var originalRSend = rSend;
+        rSend = function() {
+            if (sendTimeout) { clearTimeout(sendTimeout);
+                sendTimeout = null; }
+            isProcessing = false;
+            document.querySelector('.block-ui')?.classList.remove('active');
+            originalRSend();
+        };
 
         function sDone() {
             cSh('sh-send');
@@ -1083,50 +1336,54 @@
         // ================================================================
         //  BOOT – Splash screen with persistent session
         // ================================================================
+
         (function boot() {
-            // Restore cached data immediately (so it's ready when splash ends)
             var hasCachedToken = !!localStorage.getItem('sw_token');
             var hasCachedName = !!localStorage.getItem('sw_name');
 
             if (hasCachedToken && hasCachedName) {
-                var cachedToken = localStorage.getItem('sw_token');
-                var cachedName = localStorage.getItem('sw_name');
-                setUser(cachedName, cachedToken);
-
-                var cachedBalance = localStorage.getItem('sw_balance');
-                if (cachedBalance) updBal(parseFloat(cachedBalance));
-
-                var cachedTx = localStorage.getItem('sw_tx_cache');
-                if (cachedTx) {
-                    try {
-                        allTx = JSON.parse(cachedTx);
-                        renderHome();
-                        renderAct();
-                    } catch (_) { /* ignore */ }
+                var userId = getCurrentUserId();
+                if (userId) {
+                    var user = findUserById(userId);
+                    if (user) {
+                        setUser(localStorage.getItem('sw_name'), userId);
+                        var cachedBalance = localStorage.getItem('sw_balance');
+                        if (cachedBalance) updBal(parseFloat(cachedBalance));
+                        var cachedTx = localStorage.getItem('sw_tx_cache');
+                        if (cachedTx) {
+                            try {
+                                allTx = JSON.parse(cachedTx);
+                                renderHome();
+                                renderAct();
+                            } catch (_) { /* ignore */ }
+                        }
+                    } else {
+                        // user not found, clear
+                        localStorage.removeItem('sw_token');
+                        localStorage.removeItem('sw_name');
+                        localStorage.removeItem('sw_currentUserId');
+                        hasCachedToken = false;
+                        hasCachedName = false;
+                    }
+                } else {
+                    hasCachedToken = false;
+                    hasCachedName = false;
                 }
             }
 
-            // Wait 1.4 seconds (original feel) then navigate and refresh
             setTimeout(function() {
                 if (hasCachedToken && hasCachedName) {
                     go('p-home');
-                    // Refresh from API in the background (don't block UI)
-                    loadMe().catch(function() {
-                        // If API fails but we have cached data, stay logged in
-                        // Otherwise, if no cached data at all, log out
-                        var hasBalance = localStorage.getItem('sw_balance') !== null;
-                        var hasTx = localStorage.getItem('sw_tx_cache') !== null;
-                        if (!hasBalance && !hasTx) {
-                            logout();
-                            go('p-land');
-                        }
-                    });
+                    loadMe();
                 } else {
                     go('p-land');
                 }
             }, 1400);
         })();
     </script>
+
+    <!-- add a hidden block-ui -->
+    <div class="block-ui" id="block-ui"></div>
 
 </body>
 </html>
