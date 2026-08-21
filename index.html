@@ -521,7 +521,7 @@
             <div style="background:#FFE500;padding:max(44px,env(safe-area-inset-top)) 18px 22px;flex-shrink:0">
                 <div style="display:flex;align-items:center;gap:14px">
                     <div id="pav" style="width:56px;height:56px;border-radius:28px;background:#000;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:#FFE500">SK</div>
-                    <div><div id="pnm" style="font-size:18px;font-weight:800;color:#000">User</div><div id="pph" style="font-size:12px;color:rgba(0,0,0,.55);margin-top:2px">sendwave.xyz</div><div style="display:inline-block;margin-top:5px;padding:2px 10px;border-radius:50px;background:#000;color:#FFE500;font-size:11px;font-weight:700">✓ Verified</div></div>
+                    <div><div id="pnm" style="font-size:18px;font-weight:800;color:#000">User</div><div id="pph" style="font-size:12px;color:rgba(0,0,0,.55);margin-top:2px">sendwave.com</div><div style="display:inline-block;margin-top:5px;padding:2px 10px;border-radius:50px;background:#000;color:#FFE500;font-size:11px;font-weight:700">✓ Verified</div></div>
                 </div>
             </div>
             <div class="scr" style="padding:12px 14px">
@@ -531,7 +531,7 @@
                 <div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:14px"><span>🎁</span><div style="flex:1;font-size:14px;font-weight:600;color:#000">Refer a friend</div><span style="padding:2px 10px;border-radius:50px;background:#FFE500;color:#000;font-size:11px;font-weight:700;margin-right:6px">Earn $10</span><span style="color:#ccc">›</span></div>
                 <div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:14px"><span>🌍</span><div style="flex:1;font-size:14px;font-weight:600;color:#000">Exchange rates</div><span style="color:#ccc">›</span></div>
                 <button onclick="logout()" style="width:100%;padding:14px;background:transparent;border:1.5px solid #ffcdd2;border-radius:50px;font-size:15px;font-weight:700;color:#c62828;cursor:pointer;margin-top:6px">Log out</button>
-                <p style="text-align:center;font-size:11px;color:#bbb;margin-top:14px">sendwave.xyz · v2.0.0</p>
+                <p style="text-align:center;font-size:11px;color:#bbb;margin-top:14px">sendwave.com · v2.0.0</p>
             </div>
             <div class="bnav" style="background:#fff">
                 <div class="bni" onclick="openD()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
@@ -546,7 +546,7 @@
             <div style="background:#FFE500;padding:max(44px,env(safe-area-inset-top)) 18px 20px">
                 <div id="dav" style="width:50px;height:50px;border-radius:25px;background:#000;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;color:#FFE500;margin-bottom:10px">SK</div>
                 <div id="dnm" style="font-size:16px;font-weight:800;color:#000">User</div>
-                <div style="font-size:12px;color:rgba(0,0,0,.6);margin-top:2px">sendwave.xyz</div>
+                <div style="font-size:12px;color:rgba(0,0,0,.6);margin-top:2px">sendwave.com</div>
             </div>
             <div class="dri" onclick="closeD();go('p-home')">🏠 Home</div>
             <div class="dri" onclick="closeD();go('p-act');loadTx()">📋 Activity</div>
@@ -645,12 +645,12 @@
                     <h3 style="font-size:18px;font-weight:700;color:#000">Help & FAQ</h3>
                     <button onclick="cSh('sh-help')" style="background:none;border:none;font-size:26px;cursor:pointer;color:#aaa;line-height:1">×</button>
                 </div>
-                <div style="background:#e8f5e9;border:1px solid #c8e6c9;border-radius:12px;padding:12px 14px;display:flex;gap:8px;margin-bottom:14px"><span>✅</span><span style="font-size:13px;color:#2e7d32">sendwave.xyz is SSL secured & database powered.</span></div>
+                <div style="background:#e8f5e9;border:1px solid #c8e6c9;border-radius:12px;padding:12px 14px;display:flex;gap:8px;margin-bottom:14px"><span>✅</span><span style="font-size:13px;color:#2e7d32">sendwave.com is SSL secured & database powered.</span></div>
                 <div style="font-size:14px;color:#444;line-height:1.8">
                     <p style="margin-bottom:12px"><strong style="color:#000">Transfer speed?</strong><br />Transfers complete instantly.</p>
                     <p style="margin-bottom:12px"><strong style="color:#000">Exchange rate?</strong><br />1 USD = 129.5 KES, updated daily.</p>
                     <p style="margin-bottom:12px"><strong style="color:#000">Fees?</strong><br />Zero — what you send is what they get.</p>
-                    <p><strong style="color:#000">Support:</strong> support@sendwave.xyz</p>
+                    <p><strong style="color:#000">Support:</strong> support@sendwave.com</p>
                 </div>
             </div>
         </div>
@@ -779,7 +779,7 @@
             });
             var user = findUserById(id);
             var pph = document.getElementById('pph');
-            if (pph && user) pph.textContent = user.phone || 'sendwave.xyz';
+            if (pph && user) pph.textContent = user.phone || 'sendwave.com';
         }
 
         function updBal(b) {
